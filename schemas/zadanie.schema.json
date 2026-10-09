@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "zadanie.schema.json",
+  "title": "Zadanie z wiadomości (odpowiedź Gemini)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tytul", "osoba", "typ", "data", "godzina", "czas_min", "kwota", "pewnosc"],
+  "properties": {
+    "tytul": { "type": "string", "minLength": 1, "maxLength": 80, "description": "Bez emoji osoby i typu" },
+    "osoba": { "enum": ["🟦", "🟩", "🟨", null], "description": "null = osoba wysyłająca" },
+    "typ": { "enum": ["zadanie", "wizyta", "rachunek"] },
+    "data": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "YYYY-MM-DD; null = pytanie o dzień" },
+    "godzina": { "type": ["string", "null"], "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$", "description": "HH:MM; null = pytanie o porę" },
+    "czas_min": { "type": ["integer", "null"], "minimum": 5, "maximum": 480, "description": "null = 30" },
+    "kwota": { "type": ["number", "null"], "description": "Tylko dla rachunków" },
+    "pewnosc": { "type": "number", "minimum": 0, "maximum": 1, "description": "Poniżej 0,7 = pytanie zamiast zapisu" }
+  }
+}

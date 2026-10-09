@@ -1,0 +1,11 @@
+[
+  { "valid": true, "value": { "tytul": "Dentysta", "osoba": "🟦", "typ": "wizyta", "data": "2026-10-16", "godzina": "18:00", "czas_min": 45, "kwota": null, "pewnosc": 0.95 } },
+  { "valid": true, "value": { "tytul": "Kupić mleko", "osoba": null, "typ": "zadanie", "data": null, "godzina": null, "czas_min": null, "kwota": null, "pewnosc": 0.4 } },
+  { "valid": false, "value": { "tytul": "X", "osoba": "🟥", "typ": "zadanie", "data": null, "godzina": null, "czas_min": null, "kwota": null, "pewnosc": 0.9 } },
+  { "valid": false, "value": { "tytul": "X", "osoba": null, "typ": "zadanie", "data": "17.10.2026", "godzina": null, "czas_min": null, "kwota": null, "pewnosc": 0.9 } },
+  { "valid": false, "value": { "tytul": "X", "osoba": null, "typ": "zadanie", "data": "2026-10-17", "godzina": "25:00", "czas_min": null, "kwota": null, "pewnosc": 0.9 } },
+  { "valid": false, "value": { "tytul": "X", "osoba": null, "typ": "zadanie", "data": null, "godzina": null, "czas_min": null, "kwota": null, "pewnosc": 1.5 } },
+  { "valid": false, "value": { "tytul": "", "osoba": null, "typ": "zadanie", "data": null, "godzina": null, "czas_min": null, "kwota": null, "pewnosc": 0.9 } },
+  { "valid": false, "value": { "tytul": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "osoba": null, "typ": "zadanie", "data": null, "godzina": null, "czas_min": null, "kwota": null, "pewnosc": 0.9 } },
+  { "valid": false, "value": { "tytul": "X", "osoba": null, "typ": "zadanie", "data": null, "godzina": null, "czas_min": null, "pewnosc": 0.9 } }
+]
