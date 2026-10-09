@@ -1,0 +1,20 @@
+{
+  "name": "adhd-parents-organizer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Etap 0 „Dom”: bot Telegram na n8n, kalendarz Google i prompty Claude dla dwóch osób z ADHD",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "TZ=UTC node --test",
+    "build:n8n": "node scripts/build-workflows.mjs",
+    "check:n8n": "node scripts/build-workflows.mjs --check",
+    "eval:parse": "node scripts/eval-parse.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "esbuild": "0.23.1"
+  }
+}
