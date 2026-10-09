@@ -115,3 +115,9 @@ test('buttons from strangers are only acknowledged', async () => {
   await handleCallback(ctxWithKey(f, 'k1', f.events[0].id), cb('tm:k1', 77));
   assert.deepEqual(f.calls.map(c => c.method), ['answerCallbackQuery']);
 });
+
+test('✅ button runs the done flow', async () => {
+  const f = makeFakeIo({ events: [timed('🟦 Basen', '2026-10-09', '18:00', 60)], diceValues: [37] });
+  await handleCallback(ctxWithKey(f, 'k1', f.events[0].id, zonedToMs('2026-10-09', '18:30', TZ)), cb('ok:k1'));
+  assert.equal(f.events[0].summary, '✅ 🟦 Basen');
+});

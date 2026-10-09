@@ -3,14 +3,11 @@ import { getEvent, patchEvent, deleteEvent, movedToDate, shiftedBy, eventStartMs
 import { localParts, addDays, zonedToMs } from '../time.js';
 import { parseDescription } from '../titles.js';
 import { senderKey, createFromParsed, saveInbox, askTime } from './message.js';
+import { onDone } from '../gamify.js';
 
 const DAY = 86400000;
 const TIMES = { rano: '09:00', popoludnie: '15:00', wieczor: '19:00' };
 const EXPIRED = 'Ten przycisk już wygasł';
-
-// Haczyk dla ✅ (Zadanie 11 podmienia go na onDone).
-let doneHandler = async () => {};
-export function setDoneHandler(fn) { doneHandler = fn; }
 
 const answer = (ctx, cq, text) => ctx.io.tg('answerCallbackQuery', { callback_query_id: cq.id, ...(text ? { text } : {}) });
 const editText = (ctx, cq, text) => ctx.io.tg('editMessageText', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, text });
@@ -28,7 +25,7 @@ function pickDate(choice, nowMs, tz) {
 async function onEventButton(ctx, cq, action, entry, k) {
   const { domCal, tz } = ctx.config;
   if (action === 'ok') {
-    await doneHandler(ctx, { eventId: entry.ev, clicker: senderKey(ctx, cq.from, cq.message.chat.id), chatId: cq.message.chat.id, messageId: cq.message.message_id, callbackId: cq.id });
+    await onDone(ctx, { eventId: entry.ev, clicker: senderKey(ctx, cq.from, cq.message.chat.id), chatId: cq.message.chat.id, messageId: cq.message.message_id, callbackId: cq.id });
     return;
   }
   const ev = await getEvent(ctx, domCal, entry.ev);
