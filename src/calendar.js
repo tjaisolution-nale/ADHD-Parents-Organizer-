@@ -7,7 +7,7 @@
 //   cal(method, path, { query?, body? }) -> Promise<any>   Calendar API; błąd autoryzacji ma err.fatal = true
 //   sleep(ms) -> Promise<void>
 // Ctx = { io, store, config, now }
-import { addDays, addMinutesLocal, zonedToMs } from './time.js';
+import { addDays, addMinutesLocal, zonedToMs, localParts } from './time.js';
 
 const enc = encodeURIComponent;
 const iso = (ms) => new Date(ms).toISOString();
@@ -74,4 +74,26 @@ export async function busyBetween(ctx, fromMs, toMs) {
     }
   }
   return busy;
+}
+
+// Przeniesienie wydarzenia na inny dzień z zachowaniem lokalnej godziny i czasu trwania.
+export function movedToDate(ev, date, tz) {
+  if (ev.start.date) {
+    const span = Math.round((Date.parse(`${ev.end.date}T00:00:00Z`) - Date.parse(`${ev.start.date}T00:00:00Z`)) / 86400000) || 1;
+    return { start: { date }, end: { date: addDays(date, span) } };
+  }
+  const startMs = eventStartMs(ev, tz);
+  const minutes = Math.round((eventEndMs(ev, tz) - startMs) / 60000);
+  const { time } = localParts(startMs, tz);
+  const end = addMinutesLocal(date, time, minutes, tz);
+  return { start: { dateTime: `${date}T${time}:00`, timeZone: tz }, end: { dateTime: `${end.date}T${end.time}:00`, timeZone: tz } };
+}
+
+// Przesunięcie wydarzenia z godziną o podaną liczbę minut na osi czasu.
+export function shiftedBy(ev, minutes, tz) {
+  const point = (ms) => {
+    const p = localParts(ms + minutes * 60000, tz);
+    return { dateTime: `${p.date}T${p.time}:00`, timeZone: tz };
+  };
+  return { start: point(eventStartMs(ev, tz)), end: point(eventEndMs(ev, tz)) };
 }
