@@ -76,6 +76,27 @@ test('bundle runs as an n8n Code node', async () => {
   assert.equal(STATIC.offset, 2);
 });
 
+test('review#6: workflows have stable ids and the bot points at the error workflow', () => {
+  const errors = JSON.parse(built['dom-bledy.json']);
+  assert.equal(botWorkflow.id, 'domBot0000000001');
+  assert.equal(errors.id, 'domBledy00000001');
+  assert.equal(botWorkflow.settings.errorWorkflow, 'domBledy00000001');
+});
+
+test('review#5: a broken configuration tells 🟦 once an hour instead of failing every 5 s', async () => {
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+  const run = new AsyncFunction('$env', '$getWorkflowStaticData', codeOf(botWorkflow));
+  const http = fakeHttp({ updates: [], parsed: {} });
+  const STATIC = {};
+  const env = { ...FAKE_ENV, DOM_MODE: 'prod' };
+  const first = await run.call({ helpers: { httpRequest: http } }, env, () => STATIC);
+  assert.equal(first[0].json.processed, 0);
+  assert.match(first[0].json.error, /DOM_CALENDAR_ID/);
+  await run.call({ helpers: { httpRequest: http } }, env, () => STATIC);
+  const sent = http.calls.filter(c => c.url.endsWith('/sendMessage'));
+  assert.equal(sent.length, 1);
+});
+
 test('generated workflows contain no secrets', () => {
   assert.deepEqual(findSecrets(built['dom-bot.json'] + built['dom-bledy.json']), []);
 });

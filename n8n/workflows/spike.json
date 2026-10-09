@@ -3,14 +3,23 @@
   "nodes": [
     {
       "id": "b1f6a0de-0001-4c1e-9a10-000000000001",
-      "name": "Start",
-      "type": "n8n-nodes-base.manualTrigger",
-      "typeVersion": 1,
+      "name": "Co 10 s",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
       "position": [
         0,
         0
       ],
-      "parameters": {}
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "seconds",
+              "secondsInterval": 10
+            }
+          ]
+        }
+      }
     },
     {
       "id": "b1f6a0de-0002-4c1e-9a10-000000000002",
@@ -22,12 +31,12 @@
         0
       ],
       "parameters": {
-        "jsCode": "// Sprawdza, czy węzeł Code w Twoim n8n ma wszystko, czego potrzebuje bot „Dom”.\nconst out = { http: false, env: false, staticData: false, timer: false, binary: false, errors: {} };\n\ntry {\n  await this.helpers.httpRequest({ method: 'GET', url: 'https://api.telegram.org' });\n  out.http = true;\n} catch (e) { out.errors.http = String(e.message || e); }\n\ntry {\n  out.env = typeof $env.GENERIC_TIMEZONE === 'string' && $env.GENERIC_TIMEZONE.length > 0;\n} catch (e) { out.errors.env = String(e.message || e); }\n\ntry {\n  out.staticData = typeof $getWorkflowStaticData('global') === 'object';\n} catch (e) { out.errors.staticData = String(e.message || e); }\n\ntry {\n  const t0 = Date.now();\n  await new Promise((resolve) => setTimeout(resolve, 200));\n  out.timer = Date.now() - t0 >= 150;\n} catch (e) { out.errors.timer = String(e.message || e); }\n\ntry {\n  const buf = await this.helpers.httpRequest({ method: 'GET', url: 'https://www.google.com/favicon.ico', encoding: 'arraybuffer' });\n  out.binary = (buf?.byteLength ?? buf?.length ?? 0) > 0;\n} catch (e) { out.errors.binary = String(e.message || e); }\n\nreturn [{ json: out }];"
+        "jsCode": "// Sprawdza, czy węzeł Code w Twoim n8n ma wszystko, czego potrzebuje bot „Dom”.\n// Uruchamiany co 10 s: licznik \"count\" musi rosnąć 1, 2, 3… (stan przetrwał między uruchomieniami).\nconst out = { count: 0, http: false, fullResponse: false, env: false, staticData: false, timer: false, binary: false, urlSearchParams: false, base64: false, runners: null, errors: {} };\n\ntry {\n  const state = $getWorkflowStaticData('global');\n  state.count = (state.count || 0) + 1;\n  out.count = state.count;\n  out.staticData = true;\n} catch (e) { out.errors.staticData = String(e.message || e); }\n\ntry {\n  await this.helpers.httpRequest({ method: 'GET', url: 'https://api.telegram.org' });\n  out.http = true;\n} catch (e) { out.errors.http = String(e.message || e); }\n\ntry {\n  const res = await this.helpers.httpRequest({ method: 'GET', url: 'https://api.telegram.org/bot0/getMe', json: true, returnFullResponse: true, ignoreHttpStatusErrors: true });\n  out.fullResponse = typeof res.statusCode === 'number' && res.statusCode >= 400;\n} catch (e) { out.errors.fullResponse = String(e.message || e); }\n\ntry {\n  out.env = typeof $env.GENERIC_TIMEZONE === 'string' && $env.GENERIC_TIMEZONE.length > 0;\n  out.runners = $env.N8N_RUNNERS_ENABLED ?? null;\n} catch (e) { out.errors.env = String(e.message || e); }\n\ntry {\n  const t0 = Date.now();\n  await new Promise((resolve) => setTimeout(resolve, 200));\n  out.timer = Date.now() - t0 >= 150;\n} catch (e) { out.errors.timer = String(e.message || e); }\n\ntry {\n  const buf = await this.helpers.httpRequest({ method: 'GET', url: 'https://www.google.com/favicon.ico', encoding: 'arraybuffer' });\n  out.binary = (buf?.byteLength ?? buf?.length ?? 0) > 0;\n} catch (e) { out.errors.binary = String(e.message || e); }\n\ntry {\n  out.urlSearchParams = new URLSearchParams({ a: '1' }).toString() === 'a=1';\n} catch (e) { out.errors.urlSearchParams = String(e.message || e); }\n\ntry {\n  out.base64 = typeof Buffer !== 'undefined' || typeof btoa === 'function';\n} catch (e) { out.errors.base64 = String(e.message || e); }\n\nreturn [{ json: out }];"
       }
     }
   ],
   "connections": {
-    "Start": {
+    "Co 10 s": {
       "main": [
         [
           {

@@ -13,16 +13,17 @@ export const TEST_CONFIG = {
   parsePrompt: 'Dziś {{TODAY}} ({{WEEKDAY}}), pisze {{SENDER}}, strefa {{TZ}}.',
 };
 
-export function makeFakeIo({ gemini = [], updates = [], files = {}, events = [], partnerBusy = [], diceValues = [] } = {}) {
+export function makeFakeIo({ gemini = [], updates = [], files = {}, events = [], partnerBusy = [], diceValues = [], answerFails = false } = {}) {
   const calls = [];
   const cals = { dom: [], primary: [] };
   let nextId = 1;
+  let etag = 1;
   let messageId = 500;
   const fake = { now: Date.UTC(2026, 9, 9, 7, 0) };
 
   for (const ev of events) {
     const { calId = 'dom', ...rest } = ev;
-    (cals[calId] ||= []).push({ id: rest.id || `ev${nextId++}`, created: '2026-01-01T00:00:00.000Z', ...rest });
+    (cals[calId] ||= []).push({ id: rest.id || `ev${nextId++}`, created: '2026-01-01T00:00:00.000Z', etag: `"e${etag++}"`, ...rest });
   }
 
   const route = (path) => {
@@ -38,6 +39,7 @@ export function makeFakeIo({ gemini = [], updates = [], files = {}, events = [],
       if (method === 'getUpdates') return params.limit === 1 ? [] : (updates.shift() || []);
       if (method === 'sendMessage') return { message_id: ++messageId, ...params };
       if (method === 'sendDice') return { message_id: ++messageId, dice: { emoji: params.emoji, value: diceValues.shift() ?? 1 } };
+      if (method === 'answerCallbackQuery' && answerFails) throw new Error('Telegram answerCallbackQuery: query is too old');
       return true;
     },
     async tgFile(fileId) {
@@ -68,13 +70,18 @@ export function makeFakeIo({ gemini = [], updates = [], files = {}, events = [],
       }
       const idx = r.list.findIndex((ev) => ev.id === r.id);
       if (method === 'POST') {
-        const ev = { id: `ev${nextId++}`, created: new Date(fake.now).toISOString(), ...structuredClone(opts.body) };
+        const ev = { id: `ev${nextId++}`, created: new Date(fake.now).toISOString(), etag: `"e${etag++}"`, ...structuredClone(opts.body) };
         r.list.push(ev);
         return structuredClone(ev);
       }
       if (idx < 0) { const e = new Error('Not Found'); e.status = 404; throw e; }
       if (method === 'GET') return structuredClone(r.list[idx]);
-      if (method === 'PATCH') { Object.assign(r.list[idx], structuredClone(opts.body)); return structuredClone(r.list[idx]); }
+      if (method === 'PATCH') {
+        const ifMatch = opts.headers?.['If-Match'];
+        if (ifMatch && ifMatch !== r.list[idx].etag) { const e = new Error('Precondition Failed'); e.status = 412; throw e; }
+        Object.assign(r.list[idx], structuredClone(opts.body), { etag: `"e${etag++}"` });
+        return structuredClone(r.list[idx]);
+      }
       if (method === 'DELETE') { r.list.splice(idx, 1); return ''; }
       throw new Error(`fake cal: unsupported ${method}`);
     },

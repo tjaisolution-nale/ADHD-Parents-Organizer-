@@ -10,6 +10,7 @@ const CALENDAR = 'https://www.googleapis.com/calendar/v3';
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
+const HOUR = 3600000;
 const asJson = (body) => (typeof body === 'string' && body ? JSON.parse(body) : body);
 const fatalError = (message) => Object.assign(new Error(message), { fatal: true });
 
@@ -65,10 +66,10 @@ export function makeIo(httpRequest, config, store) {
       if (res.statusCode >= 400) throw new Error(`Gemini: ${res.statusCode}`);
       return asJson(res.body);
     },
-    async cal(method, path, { query, body } = {}) {
+    async cal(method, path, { query, body, headers = {} } = {}) {
       const call = async (token) => request({
         method, url: `${CALENDAR}${path}`, qs: query, body, json: true,
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { ...headers, Authorization: `Bearer ${token}` },
       });
       let res = await call(await googleToken());
       if (res.statusCode === 401) res = await call(await googleToken(true));
@@ -84,9 +85,28 @@ export function makeIo(httpRequest, config, store) {
   };
 }
 
+// Powiadomienie 🟦 bezpośrednio przez Telegram, bez pełnej konfiguracji (może właśnie jej brakować).
+async function notifyOwner(httpRequest, env, message) {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_ID_NIEBIESKI) return;
+  await httpRequest({
+    method: 'POST', url: `${TELEGRAM}/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, json: true,
+    returnFullResponse: true, ignoreHttpStatusErrors: true,
+    body: { chat_id: Number(env.TELEGRAM_ID_NIEBIESKI), text: `⚠️ Bot Dom: ${message}` },
+  });
+}
+
 export async function main({ httpRequest, env, staticData, now }) {
-  const config = readConfig(env, { rewards: REWARDS, parsePrompt: PARSE_PROMPT });
   const store = ensureStore(staticData);
-  const io = makeIo(httpRequest, config, store);
-  return runTick({ io, store, config, now });
+  try {
+    const config = readConfig(env, { rewards: REWARDS, parsePrompt: PARSE_PROMPT });
+    const io = makeIo(httpRequest, config, store);
+    return await runTick({ io, store, config, now });
+  } catch (err) {
+    // Wykonanie kończy się normalnie (dane statyczne zostają zapisane), a 🟦 dostaje najwyżej jedną wiadomość na godzinę.
+    if (!store.errorAt || now - store.errorAt > HOUR) {
+      store.errorAt = now;
+      await notifyOwner(httpRequest, env, err.message).catch(() => {});
+    }
+    return { processed: 0, error: err.message };
+  }
 }

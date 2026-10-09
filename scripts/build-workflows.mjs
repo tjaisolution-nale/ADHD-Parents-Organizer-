@@ -4,6 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const OUT_DIR = 'n8n/workflows';
+// Stałe ID: ponowny import aktualizuje te same workflow zamiast tworzyć kopie.
+const BOT_ID = 'domBot0000000001';
+const ERRORS_ID = 'domBledy00000001';
 
 async function bundle() {
   const result = await build({
@@ -21,13 +24,14 @@ const r = await DomBot.main({ httpRequest: (o) => this.helpers.httpRequest(o), e
 return [{ json: r }];
 `;
   return {
+    id: BOT_ID,
     name: 'Dom – bot',
     nodes: [
       { id: 'a7d3c1f0-0001-4b2e-8c11-000000000001', name: 'Co 5 s', type: 'n8n-nodes-base.scheduleTrigger', typeVersion: 1.2, position: [0, 0], parameters: { rule: { interval: [{ field: 'seconds', secondsInterval: 5 }] } } },
       { id: 'a7d3c1f0-0002-4b2e-8c11-000000000002', name: 'Bot', type: 'n8n-nodes-base.code', typeVersion: 2, position: [240, 0], parameters: { jsCode } },
     ],
     connections: { 'Co 5 s': { main: [[{ node: 'Bot', type: 'main', index: 0 }]] } },
-    settings: { executionOrder: 'v1', saveDataSuccessExecution: 'none', saveManualExecutions: false },
+    settings: { executionOrder: 'v1', saveDataSuccessExecution: 'none', saveManualExecutions: false, errorWorkflow: ERRORS_ID },
     active: false,
   };
 }
@@ -44,6 +48,7 @@ await this.helpers.httpRequest({
 return [{ json: { sent: true } }];
 `;
   return {
+    id: ERRORS_ID,
     name: 'Dom – błędy',
     nodes: [
       { id: 'a7d3c1f0-0003-4b2e-8c11-000000000003', name: 'Błąd bota', type: 'n8n-nodes-base.errorTrigger', typeVersion: 1, position: [0, 0], parameters: {} },

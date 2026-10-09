@@ -106,3 +106,22 @@ test('first weeks without events keep the goal at 5', async () => {
   const f = makeFakeIo({ events: [{ ...timed('✅ 🟦 B', '2026-10-07', '10:00', 30), description: 'pkt: 🟦30' }] });
   assert.deepEqual(await ensureGoals(ctxOf(f, zonedToMs('2026-10-14', '18:00', TZ))), { b: 5, g: 5 });
 });
+
+test('review#2: ticking last week\'s task on Monday counts in this week', async () => {
+  const mon = zonedToMs('2026-10-12', '09:00', TZ);
+  const f = makeFakeIo({ events: [timed('🟦 Zaległe', '2026-10-11', '18:00', 30), timed('🟦 Nowe', '2026-10-12', '10:00', 30)], diceValues: [37, 37] });
+  const ctx = ctxOf(f, mon);
+  await done(ctx, f.events[0], 'b');
+  await done({ ...ctx, now: mon + 30 * MIN }, f.events[1], 'b');
+  const results = texts(f).filter(t => t.startsWith('Zawsze coś wpada'));
+  assert.ok(results[1].includes('🟦 ▓▓░░░ 40%'), results[1]);
+});
+
+test('review#7: two ✅ on the same task in overlapping runs count once (ETag claim)', async () => {
+  const f = makeFakeIo({ events: [timed('🟨 Basen', '2026-10-09', '18:00', 30)], diceValues: [37, 37] });
+  const ctx = ctxOf(f, T0);
+  await Promise.all([done(ctx, f.events[0], 'b'), done(ctx, f.events[0], 'g')]);
+  assert.equal(f.calls.filter(c => c.method === 'sendDice').length, 1);
+  assert.match(f.events[0].description, /pkt: 🟦1 🟩1/);
+  assert.ok(f.calls.some(c => c.method === 'answerCallbackQuery' && c.params.text === 'Już zrobione ✅'));
+});

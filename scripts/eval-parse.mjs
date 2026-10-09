@@ -9,11 +9,11 @@ import { readEnv } from './lib/env.mjs';
 
 const shouldAsk = (e) => e.data === null || (e.godzina === null && e.typ !== 'rachunek');
 
-// result: { saved: false } albo { saved: true, value: Parsed }
-export function classify(expect, result) {
+// result: { saved: false } albo { saved: true, value: Parsed }; osoba null oznacza osobę wysyłającą
+export function classify(expect, result, sender = '🟦') {
   if (!result.saved) return shouldAsk(expect) ? 'correct' : 'asked';
   const v = result.value;
-  const same = v.data === expect.data && v.godzina === expect.godzina && v.osoba === expect.osoba
+  const same = v.data === expect.data && v.godzina === expect.godzina && (v.osoba ?? sender) === (expect.osoba ?? sender)
     && (v.typ === 'rachunek') === (expect.typ === 'rachunek');
   return same && !shouldAsk(expect) ? 'correct' : 'wrong_saved';
 }
@@ -37,10 +37,12 @@ async function main() {
     const ctx = { io, store: ensureStore({}), config: { tz, geminiLimit: 1000, parsePrompt: readFileSync('prompts/gemini-parse.md', 'utf8') }, now };
     const meta = { today: g.today, weekday: localParts(now, tz).weekday, sender: g.sender, tz };
     const res = await parseWithRetry(ctx, { text: g.text }, meta);
-    const saved = res.ok && checkParsed(res.value, { nowMs: now, tz, text: g.text }).ok;
-    const outcome = classify(g.expect, saved ? { saved: true, value: res.value } : { saved: false });
+    const leading = /^\s*(🟦|🟩|🟨)/u.exec(g.text);
+    const value = res.ok && leading ? { ...res.value, osoba: leading[1] } : res.ok ? res.value : null;
+    const saved = res.ok && checkParsed(value, { nowMs: now, tz, text: g.text }).ok;
+    const outcome = classify(g.expect, saved ? { saved: true, value } : { saved: false }, g.sender);
     counts[outcome]++;
-    const got = res.ok ? `${res.value.data ?? '—'} ${res.value.godzina ?? '—'} ${res.value.osoba ?? '·'} ${res.value.typ}` : res.reason;
+    const got = res.ok ? `${value.data ?? '—'} ${value.godzina ?? '—'} ${value.osoba ?? '·'} ${value.typ}` : res.reason;
     console.log(`${outcome.padEnd(11)} | ${g.text.padEnd(48)} | ${got}`);
   }
   const score = counts.correct / golden.length;

@@ -29,6 +29,13 @@ Wszystko na kalendarzu „Dom-TEST” (`DOM_MODE=test`). Zaznaczaj po kolei; ka�
 
 ## Odporność
 
+- [ ] Restart kontenera n8n, potem ✅ pod potwierdzeniem sprzed restartu → działa (pamięć bota przetrwała).
+- [ ] Dwie wiadomości w ciągu 5 sekund, potem ✅ pod oboma potwierdzeniami → oba działają, żaden przycisk nie „wygasł”.
+- [ ] Obie osoby klikają ✅ pod tą samą sprawą 🟨 niemal jednocześnie → jedna animacja 🎰, druga osoba dostaje „Już zrobione ✅”.
+- [ ] Aktualizacja według `docs/setup.md` („Aktualizacja bota”) → w n8n nadal jest jeden „Dom – bot”, nie dwa.
+- [ ] „Jutro” pod sprawą zaległą z zeszłego tygodnia → przenosi na jutro, nie na dzień po starym terminie.
+- [ ] „🟩 odebrać paczkę jutro 15” wysłane przez 🟦 → tytuł zaczyna się od 🟩.
+
 - [ ] Mac uśpiony (zatrzymaj kontener), wyślij wiadomość, uruchom kontener → wiadomość obsłużona; jeśli termin już minął, bot pyta o nowy dzień.
 - [ ] Zły klucz Gemini w `.env` (restart kontenera) → „📥 Zapisane do posortowania…” i wydarzenie 📥 na dziś. Przywróć klucz.
 - [ ] Wiadomość od osoby spoza listy albo naklejka → brak reakcji.

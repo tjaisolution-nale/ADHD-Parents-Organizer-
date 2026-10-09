@@ -6,7 +6,8 @@ import { classify } from '../scripts/eval-parse.mjs';
 const golden = JSON.parse(readFileSync('tests/parse-golden.json', 'utf8'));
 
 test('golden set shape', () => {
-  assert.equal(golden.length, 30);
+  assert.equal(golden.length, 32);
+  assert.ok(golden.some(g => g.expect.osoba === '🟩' && g.sender === '🟦'));
   assert.ok(golden.filter(g => g.expect.data === null).length >= 5);
   for (const g of golden) assert.ok(g.text && g.today && g.sender && 'data' in g.expect && 'godzina' in g.expect);
 });
@@ -19,4 +20,6 @@ test('classify: asking is right only when the case expects a question', () => {
   assert.equal(classify(dated, { saved: true, value: { ...dated, typ: 'zadanie' } }), 'correct');
   assert.equal(classify(dated, { saved: true, value: { ...dated, godzina: '19:00' } }), 'wrong_saved');
   assert.equal(classify(undated, { saved: true, value: { ...undated, data: '2026-10-09', godzina: '12:00' } }), 'wrong_saved');
+  // osoba null oznacza osobę wysyłającą
+  assert.equal(classify({ ...dated, osoba: '🟦' }, { saved: true, value: dated }, '🟦'), 'correct');
 });

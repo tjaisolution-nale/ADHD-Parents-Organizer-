@@ -49,3 +49,11 @@ test('event points', () => {
   assert.deepEqual(eventPoints({ summary: '✅ 🟦 X', description: 'pkt: 🟦3' }, emails), { b: 3, g: 0 });
   assert.deepEqual(eventPoints({ summary: '🟦 X' }, emails), { b: 0, g: 0 });
 });
+
+test('review#2: an event belongs to the week of its ✅, falling back to its start', async () => {
+  const { eventWeekDate } = await import('../src/points.js');
+  const TZ = 'Europe/London';
+  assert.equal(eventWeekDate({ start: { dateTime: '2026-10-11T18:00:00', timeZone: TZ }, description: 'zrobione: 2026-10-12T09:00 🟦\npkt: 🟦1' }, TZ), '2026-10-12');
+  assert.equal(eventWeekDate({ start: { dateTime: '2026-10-11T18:00:00', timeZone: TZ } }, TZ), '2026-10-11');
+  assert.equal(eventWeekDate({ start: { date: '2026-10-11' } }, TZ), '2026-10-11');
+});

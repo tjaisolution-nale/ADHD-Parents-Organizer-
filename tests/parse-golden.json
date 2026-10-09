@@ -28,5 +28,7 @@
   { "text": "zadzwonić do hydraulika", "today": "2026-10-09", "sender": "🟦", "expect": { "data": null, "godzina": null, "osoba": null, "typ": "zadanie" } },
   { "text": "kiedyś trzeba posprzątać strych", "today": "2026-10-09", "sender": "🟦", "expect": { "data": null, "godzina": null, "osoba": null, "typ": "zadanie" } },
   { "text": "call mum", "today": "2026-10-09", "sender": "🟦", "expect": { "data": null, "godzina": null, "osoba": null, "typ": "zadanie" } },
-  { "text": "wysłać kartkę urodzinową do babci", "today": "2026-10-09", "sender": "🟦", "expect": { "data": null, "godzina": null, "osoba": null, "typ": "zadanie" } }
+  { "text": "wysłać kartkę urodzinową do babci", "today": "2026-10-09", "sender": "🟦", "expect": { "data": null, "godzina": null, "osoba": null, "typ": "zadanie" } },
+  { "text": "🟩 odebrać paczkę jutro 15", "today": "2026-10-09", "sender": "🟦", "expect": { "data": "2026-10-10", "godzina": "15:00", "osoba": "🟩", "typ": "zadanie" } },
+  { "text": "🟦 jutro 9 dentysta", "today": "2026-10-09", "sender": "🟩", "expect": { "data": "2026-10-10", "godzina": "09:00", "osoba": "🟦", "typ": "wizyta" } }
 ]

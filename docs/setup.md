@@ -4,15 +4,15 @@ Ten przewodnik prowadzi przez konfigurację krok po kroku. Zajmuje około godzin
 
 ## Krok 0: spike (10 minut)
 
-Ten krok sprawdza, czy węzeł Code w Twoim n8n potrafi to, czego potrzebuje bot: wysyłać zapytania HTTP, czytać zmienne środowiska, pamiętać stan między uruchomieniami, czekać i pobierać pliki binarne.
+Ten krok sprawdza, czy węzeł Code w Twoim n8n potrafi to, czego potrzebuje bot: wysyłać zapytania HTTP (także bez przerywania na błędach HTTP), czytać zmienne środowiska, pamiętać stan między uruchomieniami, czekać, pobierać pliki binarne i kodować je w base64.
 
 1. Sprawdź wersję n8n: `docker exec <nazwa-kontenera> n8n --version`.
 2. Jeśli w Twoim kontenerze nie ma jeszcze `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, dodaj tę zmienną i zrestartuj kontener (bez niej odczyt `$env` będzie zablokowany).
 3. W n8n: **Workflows → Import from File** i wybierz `n8n/workflows/spike.json`.
-4. Otwórz workflow „Dom – spike” i kliknij **Test workflow**.
-5. Otwórz wynik węzła „Sprawdź możliwości” i wyślij go Claude.
+4. Otwórz workflow „Dom – spike” i **włącz go** (przełącznik Active). Odczekaj około 40 sekund i **wyłącz**.
+5. Otwórz **Executions** tego workflow: powinny być 3–4 uruchomienia. Wyślij Claude wynik węzła „Sprawdź możliwości” z ostatniego z nich.
 
-Oczekiwany wynik: `http`, `env`, `staticData`, `timer` i `binary` mają wartość `true`. Pole `errors` mówi, co poszło nie tak. Po sprawdzeniu możesz usunąć workflow „Dom – spike”.
+Oczekiwany wynik: `count` rośnie z uruchomienia na uruchomienie (1, 2, 3…), a `http`, `fullResponse`, `env`, `staticData`, `timer`, `binary`, `urlSearchParams` i `base64` mają wartość `true`. Pole `runners` mówi, czy włączone są task runnery n8n. Pole `errors` mówi, co poszło nie tak. Po sprawdzeniu usuń workflow „Dom – spike”.
 
 ## Krok 1: kalendarze
 
@@ -55,7 +55,11 @@ Skopiuj `n8n/.env.example` do `n8n/.env` i uzupełnij wszystkie pola. Na start z
 - Z kontenerem z tego repozytorium: `scripts/setup.sh`.
 - Z Twoim istniejącym kontenerem n8n: upewnij się, że kontener dostaje zmienne z `n8n/.env` (np. `env_file`) i ma `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, potem `N8N_CONTAINER=<nazwa-kontenera> scripts/setup.sh`.
 
-Następnie w n8n otwórz „Dom – bot” → **Settings → Error workflow**: wybierz „Dom – błędy”, zapisz i włącz workflow „Dom – bot”.
+Następnie w n8n włącz workflow „Dom – bot” (przełącznik Active). Workflow błędów „Dom – błędy” jest już przypięty w ustawieniach; sprawdź to w **Settings → Error workflow**.
+
+## Aktualizacja bota
+
+Po zmianach w repozytorium: `git pull`, potem `scripts/setup.sh` (albo z `N8N_CONTAINER=…`). Import nadpisuje te same workflow (stałe ID), ale je wyłącza, więc włącz „Dom – bot” ponownie. Import czyści też pamięć bota: przyciski pod starszymi wiadomościami odpowiedzą „Ten przycisk już wygasł”, a cele tygodnia policzą się od nowa z kalendarza.
 
 ## Krok 7: Wispr Flow
 
@@ -63,4 +67,4 @@ Na telefonie ustaw Wispr Flow jako klawiaturę do dyktowania i dyktuj prosto do 
 
 ## Krok 8: z testów na produkcję
 
-Po tygodniu testów (lista w `docs/testy-akceptacyjne.md`): w `n8n/.env` ustaw `DOM_MODE=prod`, zrestartuj kontener n8n i poproś Claude o przełączenie Routines na kalendarz „Dom” i oba adresy e-mail.
+Po tygodniu testów (lista w `docs/testy-akceptacyjne.md`): w `n8n/.env` ustaw `DOM_MODE=prod` i upewnij się, że `DOM_CALENDAR_ID` jest wypełnione (bez niego bot nie wystartuje i raz na godzinę napisze o tym do 🟦), zrestartuj kontener n8n i poproś Claude o przełączenie Routines na kalendarz „Dom” i oba adresy e-mail.

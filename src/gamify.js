@@ -2,14 +2,24 @@
 import { getEvent, patchEvent, listEvents } from './calendar.js';
 import { localParts, zonedToMs, addDays, weekStart } from './time.js';
 import { PERSON, parseTitle, markDone, setMeta, formatPkt, personFromEvent } from './titles.js';
-import { SLOT_LABEL, decodeSlot, nextCombo, isHighFive, weeklyGoal, percent, renderBars, weekPoints } from './points.js';
+import { SLOT_LABEL, decodeSlot, nextCombo, isHighFive, weeklyGoal, percent, renderBars, weekPoints, eventWeekDate } from './points.js';
 
 const DICE_PAUSE_MS = 2000;
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
-function weekRange(ctx, start) {
-  const { tz } = ctx.config;
-  return [zonedToMs(start, '00:00', tz), zonedToMs(addDays(start, 7), '00:00', tz)];
+const LOOKBACK_DAYS = 30; // ✅ zaległej sprawy liczy się w tygodniu kliknięcia, więc czytamy też starsze wydarzenia
+
+// Wydarzenia, których punkty należą do tygodni od `firstWeek` do `lastWeek` włącznie, pogrupowane po tygodniu.
+async function eventsByWeek(ctx, firstWeek, lastWeek) {
+  const { tz, domCal } = ctx.config;
+  const from = zonedToMs(addDays(firstWeek, -LOOKBACK_DAYS), '00:00', tz);
+  const to = zonedToMs(addDays(lastWeek, 7), '00:00', tz);
+  const byWeek = {};
+  for (const ev of await listEvents(ctx, domCal, from, to)) {
+    const week = weekStart(eventWeekDate(ev, tz));
+    if (week >= firstWeek && week <= lastWeek) (byWeek[week] ||= []).push(ev);
+  }
+  return byWeek;
 }
 
 export async function ensureGoals(ctx) {
@@ -17,8 +27,9 @@ export async function ensureGoals(ctx) {
   const week = weekStart(localParts(ctx.now, config.tz).date);
   if (store.goals.week === week) return { b: store.goals.b, g: store.goals.g };
   const history = { b: [], g: [] };
+  const byWeek = await eventsByWeek(ctx, addDays(week, -14), addDays(week, -7));
   for (const start of [addDays(week, -14), addDays(week, -7)]) {
-    const events = await listEvents(ctx, config.domCal, ...weekRange(ctx, start));
+    const events = byWeek[start] || [];
     if (!events.length) continue; // tydzień bez wydarzeń nie liczy się do historii
     const pts = weekPoints(events, config.emails);
     history.b.push(pts.b);
@@ -30,14 +41,22 @@ export async function ensureGoals(ctx) {
 
 export async function onDone(ctx, { eventId, clicker, chatId, messageId, callbackId }) {
   const { io, store, config } = ctx;
-  const answer = (text) => io.tg('answerCallbackQuery', { callback_query_id: callbackId, ...(text ? { text } : {}) });
+  // Odpowiedź na przycisk jest najlepszym wysiłkiem: Telegram odrzuca ją dla starych kliknięć.
+  const answer = (text) => io.tg('answerCallbackQuery', { callback_query_id: callbackId, ...(text ? { text } : {}) }).catch(() => {});
 
   const ev = await getEvent(ctx, config.domCal, eventId);
   if (parseTitle(ev.summary).done) return answer('Już zrobione ✅');
+  // Zajęcie zadania warunkowym PATCH-em (ETag): z dwóch równoległych kliknięć wygrywa jedno.
+  try {
+    await patchEvent(ctx, config.domCal, ev.id, { summary: markDone(ev.summary) }, { ifMatch: ev.etag });
+  } catch (err) {
+    if (err.status === 412) return answer('Już zrobione ✅');
+    throw err;
+  }
   await answer();
 
   const goals = await ensureGoals(ctx);
-  const week = await listEvents(ctx, config.domCal, ...weekRange(ctx, store.goals.week));
+  const week = (await eventsByWeek(ctx, store.goals.week, store.goals.week))[store.goals.week] || [];
   const before = weekPoints(week.filter((e) => e.id !== ev.id), config.emails);
 
   const delta = { b: 0, g: 0 };
@@ -59,7 +78,7 @@ export async function onDone(ctx, { eventId, clicker, chatId, messageId, callbac
 
   const at = localParts(ctx.now, config.tz);
   const meta = { zrobione: `${at.date}T${at.time} ${PERSON[clicker]}`, pkt: formatPkt(delta), ...(combo.level > 1 ? { combo: `x${combo.level}` } : {}) };
-  await patchEvent(ctx, config.domCal, ev.id, { summary: markDone(ev.summary), description: setMeta(ev.description, meta) });
+  await patchEvent(ctx, config.domCal, ev.id, { description: setMeta(ev.description, meta) });
   await io.tg('editMessageReplyMarkup', { chat_id: chatId, message_id: messageId, reply_markup: { inline_keyboard: [] } });
   await io.sleep(DICE_PAUSE_MS);
 

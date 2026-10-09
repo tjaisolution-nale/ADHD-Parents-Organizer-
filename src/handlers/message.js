@@ -3,7 +3,7 @@ import { parseWithRetry } from '../parse.js';
 import { checkParsed } from '../guards.js';
 import { busyBetween, insertEvent, toEventBody } from '../calendar.js';
 import { findClash, nextFreeStart } from '../slots.js';
-import { localParts, zonedToMs, formatPl } from '../time.js';
+import { localParts, zonedToMs, formatPl, addDays } from '../time.js';
 import { PERSON, buildTitle, setMeta } from '../titles.js';
 import { newKey } from '../store.js';
 
@@ -11,6 +11,8 @@ const DAY = 86400000;
 const MIN = 60000;
 const DEFAULT_MINUTES = 30;
 const CLASH_HORIZON = 3 * 60 * MIN;
+const BILL_LEAD_DAYS = 3;
+const LEADING_PERSON = /^\s*(🟦|🟩|🟨)/u;
 const KEY_OF = { '🟦': 'b', '🟩': 'g', '🟨': 'y' };
 const INTRO = {
   past: '⏳ Ten termin już minął. Kiedy?',
@@ -71,8 +73,14 @@ export async function saveInbox(ctx, { text, sender, src }) {
 export async function createFromParsed(ctx, { parsed, sender, src, allDay = false, skipClash = false }) {
   const { tz, domCal } = ctx.config;
   const osoba = parsed.osoba ? KEY_OF[parsed.osoba] : sender;
-  const title = buildTitle({ osoba, typ: parsed.typ, tekst: parsed.tytul });
-  const time = allDay ? null : parsed.godzina;
+  const bill = parsed.typ === 'rachunek';
+  // Rachunek: przypomnienie 3 dni przed terminem (albo dziś), jak w Routine porannej.
+  const today = localParts(ctx.now, tz).date;
+  const lead = bill && parsed.data ? addDays(parsed.data, -BILL_LEAD_DAYS) : null;
+  const date = lead ? (lead > today ? lead : today) : parsed.data;
+  const tekst = bill && parsed.data ? `${parsed.tytul} – termin ${parsed.data.slice(8, 10)}.${parsed.data.slice(5, 7)}` : parsed.tytul;
+  const title = buildTitle({ osoba, typ: parsed.typ, tekst });
+  const time = allDay || bill ? null : parsed.godzina;
   const minutes = parsed.czas_min ?? DEFAULT_MINUTES;
 
   if (time && !skipClash) {
@@ -90,12 +98,16 @@ export async function createFromParsed(ctx, { parsed, sender, src, allDay = fals
     }
   }
 
-  const meta = { ...sourceMeta(src), ...(parsed.kwota != null ? { kwota: `£${parsed.kwota.toFixed(2)}` } : {}) };
-  const body = toEventBody({ title, date: parsed.data, time, durationMin: minutes, description: setMeta('', meta), tz });
+  const meta = {
+    ...sourceMeta(src),
+    ...(parsed.kwota != null ? { kwota: `£${parsed.kwota.toFixed(2)}` } : {}),
+    ...(bill && parsed.data ? { termin: parsed.data } : {}),
+  };
+  const body = toEventBody({ title, date, time, durationMin: minutes, description: setMeta('', meta), tz });
   const ev = await insertEvent(ctx, domCal, body);
   const k = newKey(ctx.store);
   ctx.store.cb[k] = { ev: ev.id, exp: ctx.now + 14 * DAY };
-  await send(ctx, confirmText(title, parsed.data, time), taskKeyboard(k));
+  await send(ctx, confirmText(title, date, time), taskKeyboard(k));
 }
 
 export async function handleMessage(ctx, msg) {
@@ -120,12 +132,15 @@ export async function handleMessage(ctx, msg) {
     return;
   }
 
-  const check = checkParsed(res.value, { nowMs: ctx.now, tz, text });
+  // Emoji osoby na początku wiadomości rozstrzyga, czyja to sprawa (silniejsze niż odczyt modelu).
+  const leading = LEADING_PERSON.exec(text || '');
+  const parsed = leading ? { ...res.value, osoba: leading[1] } : res.value;
+  const check = checkParsed(parsed, { nowMs: ctx.now, tz, text });
   if (!check.ok) {
-    const k = remember(ctx, { parsed: res.value, sender, src, text });
+    const k = remember(ctx, { parsed, sender, src, text });
     if (check.reason === 'missing_time') await askTime(ctx, k);
     else await askDay(ctx, k, INTRO[check.reason]);
     return;
   }
-  await createFromParsed(ctx, { parsed: res.value, sender, src });
+  await createFromParsed(ctx, { parsed, sender, src });
 }

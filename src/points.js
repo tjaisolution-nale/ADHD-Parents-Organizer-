@@ -1,5 +1,7 @@
 // Punkty: 🎰 Los, 🔥 Combo, 🙌 Piątka, cele tygodnia i paski postępu.
 import { parseTitle, parseDescription, parsePkt, personFromEvent, PERSON } from './titles.js';
+import { eventStartMs } from './calendar.js';
+import { localParts } from './time.js';
 
 const MIN = 60000;
 const COMBO_WINDOW = 20 * MIN;
@@ -59,6 +61,13 @@ export function eventPoints(event, emails) {
   if (pkt !== undefined) return parsePkt(pkt);
   const who = personFromEvent(event, emails);
   return { b: who === 'b' || who === 'y' ? 1 : 0, g: who === 'g' || who === 'y' ? 1 : 0 };
+}
+
+// Do którego dnia (a więc tygodnia) należą punkty: dzień kliknięcia ✅, a bez niego dzień wydarzenia.
+export function eventWeekDate(event, tz) {
+  const done = /^(\d{4}-\d{2}-\d{2})T/.exec(parseDescription(event.description).meta.zrobione || '');
+  if (done) return done[1];
+  return event.start.date || localParts(eventStartMs(event, tz), tz).date;
 }
 
 export function weekPoints(events, emails) {

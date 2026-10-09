@@ -9,7 +9,8 @@ const DAY = 86400000;
 const TIMES = { rano: '09:00', popoludnie: '15:00', wieczor: '19:00' };
 const EXPIRED = 'Ten przycisk już wygasł';
 
-const answer = (ctx, cq, text) => ctx.io.tg('answerCallbackQuery', { callback_query_id: cq.id, ...(text ? { text } : {}) });
+// Telegram odrzuca odpowiedzi na przyciski kliknięte dawno temu (Mac spał): to nie może przerwać samej akcji.
+const answer = (ctx, cq, text) => ctx.io.tg('answerCallbackQuery', { callback_query_id: cq.id, ...(text ? { text } : {}) }).catch(() => {});
 const editText = (ctx, cq, text) => ctx.io.tg('editMessageText', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, text });
 const clearButtons = (ctx, cq) => ctx.io.tg('editMessageReplyMarkup', { chat_id: cq.message.chat.id, message_id: cq.message.message_id, reply_markup: { inline_keyboard: [] } });
 
@@ -36,7 +37,9 @@ async function onEventButton(ctx, cq, action, entry, k) {
   }
   if (action === 'tm') {
     const date = ev.start.date || localParts(eventStartMs(ev, tz), tz).date;
-    await patchEvent(ctx, domCal, ev.id, movedToDate(ev, addDays(date, 1), tz));
+    const tomorrow = addDays(localParts(ctx.now, tz).date, 1);
+    const next = addDays(date, 1);
+    await patchEvent(ctx, domCal, ev.id, movedToDate(ev, next > tomorrow ? next : tomorrow, tz)); // nigdy w przeszłość
     return answer(ctx, cq, '📅 Przeniesione na jutro');
   }
   if (action === 'un') {

@@ -12,6 +12,7 @@ const defaults = () => ({
   gtoken: null,
   fatalAt: null,
   forceSlot: null,
+  errorAt: null,
 });
 
 function fill(target, base) {

@@ -15,7 +15,7 @@ test('acknowledges the offset before processing', async () => {
   const ctx = ctxOf(f, NOW);
   await runTick(ctx);
   const gu = f.calls.filter(c => c.method === 'getUpdates');
-  assert.deepEqual(gu[0].params, { offset: 0, timeout: 0, allowed_updates: ['message', 'callback_query'] });
+  assert.deepEqual(gu[0].params, { offset: 0, timeout: 0, limit: 20, allowed_updates: ['message', 'callback_query'] });
   assert.deepEqual(gu[1].params, { offset: 12, timeout: 0, limit: 1 });
   assert.ok(f.calls.indexOf(gu[1]) < f.calls.findIndex(c => c.api === 'gemini'));
   assert.equal(ctx.store.offset, 12);

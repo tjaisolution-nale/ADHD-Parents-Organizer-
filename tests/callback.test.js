@@ -121,3 +121,21 @@ test('✅ button runs the done flow', async () => {
   await handleCallback(ctxWithKey(f, 'k1', f.events[0].id, zonedToMs('2026-10-09', '18:30', TZ)), cb('ok:k1'));
   assert.equal(f.events[0].summary, '✅ 🟦 Basen');
 });
+
+test('review#1: a stale button (answer rejected by Telegram) still applies once and does not throw', async () => {
+  const f = makeFakeIo({ events: [timed('🟦 Basen', '2026-10-16', '18:00', 60)], answerFails: true });
+  await handleCallback(ctxWithKey(f, 'k1', f.events[0].id), cb('tm:k1'));
+  assert.deepEqual(f.events[0].start, { dateTime: '2026-10-17T18:00:00', timeZone: TZ });
+});
+
+test('review#1: a stale ✅ is still recorded', async () => {
+  const f = makeFakeIo({ events: [timed('🟦 Basen', '2026-10-09', '18:00', 60)], diceValues: [37], answerFails: true });
+  await handleCallback(ctxWithKey(f, 'k1', f.events[0].id, zonedToMs('2026-10-09', '18:30', TZ)), cb('ok:k1'));
+  assert.equal(f.events[0].summary, '✅ 🟦 Basen');
+});
+
+test('review#3: "Jutro" on an overdue task never moves it into the past', async () => {
+  const f = makeFakeIo({ events: [timed('🟦 Basen', '2026-10-12', '18:00', 60)] });
+  await handleCallback(ctxWithKey(f, 'k1', f.events[0].id, zonedToMs('2026-10-14', '08:00', TZ)), cb('tm:k1'));
+  assert.deepEqual(f.events[0].start, { dateTime: '2026-10-15T18:00:00', timeZone: TZ });
+});

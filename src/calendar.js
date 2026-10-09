@@ -51,7 +51,9 @@ export async function listEvents(ctx, calId, fromMs, toMs) {
 
 export const getEvent = (ctx, calId, id) => ctx.io.cal('GET', `/calendars/${enc(calId)}/events/${enc(id)}`);
 export const insertEvent = (ctx, calId, body) => ctx.io.cal('POST', `/calendars/${enc(calId)}/events`, { body });
-export const patchEvent = (ctx, calId, id, patch) => ctx.io.cal('PATCH', `/calendars/${enc(calId)}/events/${enc(id)}`, { body: patch });
+export const patchEvent = (ctx, calId, id, patch, { ifMatch } = {}) => ctx.io.cal('PATCH', `/calendars/${enc(calId)}/events/${enc(id)}`, {
+  body: patch, ...(ifMatch ? { headers: { 'If-Match': ifMatch } } : {}),
+});
 export const deleteEvent = (ctx, calId, id) => ctx.io.cal('DELETE', `/calendars/${enc(calId)}/events/${enc(id)}`);
 
 export async function busyBetween(ctx, fromMs, toMs) {

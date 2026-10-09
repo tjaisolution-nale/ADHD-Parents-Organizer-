@@ -5,6 +5,7 @@ import { handleCallback } from './handlers/callback.js';
 import { handleCommand } from './handlers/commands.js';
 
 const HOUR = 3600000;
+const BATCH = 20; // krótsze obroty po przebudzeniu Maca; reszta przyjdzie w następnym
 const SORRY = '⚠️ Coś poszło nie tak. Spróbuj jeszcze raz.';
 const NO_CALENDAR = '⚠️ Bot nie ma teraz dostępu do kalendarza. Ta wiadomość nie została zapisana; wyślij ją ponownie, gdy bot znów zadziała.';
 
@@ -29,7 +30,7 @@ async function tell(ctx, text) {
 export async function runTick(ctx) {
   const { io, store } = ctx;
   pruneStore(store, ctx.now);
-  const updates = await io.tg('getUpdates', { offset: store.offset, timeout: 0, allowed_updates: ['message', 'callback_query'] });
+  const updates = await io.tg('getUpdates', { offset: store.offset, timeout: 0, limit: BATCH, allowed_updates: ['message', 'callback_query'] });
   if (!updates.length) return { processed: 0 };
 
   // Potwierdzenie przed obsługą: nakładające się uruchomienia (co 5 s) nie dostaną tych samych aktualizacji.

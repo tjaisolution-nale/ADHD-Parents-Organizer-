@@ -107,3 +107,20 @@ test('invalid answers twice offers inbox or rewrite', async () => {
   assert.match(sent.params.reply_markup.inline_keyboard.flat()[0].callback_data, /^ib:[0-9a-z]{6}:zapisz$/);
   assert.equal(Object.values(ctx.store.pending)[0].text, 'blablabla');
 });
+
+test('review#4: a leading person emoji decides the owner', async () => {
+  const f = makeFakeIo({ gemini: [ok({ tytul: 'Odebrać paczkę', data: '2026-10-10', godzina: '15:00' })] });
+  await handleMessage(ctxOf(f, NOW), textMsg('🟩 odebrać paczkę jutro 15'));
+  assert.equal(f.events[0].summary, '🟩 Odebrać paczkę');
+});
+
+test('declined#4: a bill added by the bot lands 3 days before its due date', async () => {
+  const f = makeFakeIo({ gemini: [ok({ tytul: 'Council tax', typ: 'rachunek', data: '2026-11-01', kwota: 182, pewnosc: 0.95 }), ok({ tytul: 'Woda', typ: 'rachunek', data: '2026-10-10', kwota: 40 })] });
+  await handleMessage(ctxOf(f, NOW), textMsg('council tax £182 do 1.11'));
+  await handleMessage(ctxOf(f, NOW), textMsg('woda £40 do jutra'));
+  assert.equal(f.events[0].summary, '🟦 💸 Council tax – termin 01.11');
+  assert.deepEqual(f.events[0].start, { date: '2026-10-29' });
+  assert.match(f.events[0].description, /termin: 2026-11-01/);
+  assert.match(f.events[0].description, /kwota: £182\.00/);
+  assert.deepEqual(f.events[1].start, { date: '2026-10-09' });
+});
