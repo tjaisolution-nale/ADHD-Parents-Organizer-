@@ -5,6 +5,7 @@ import { parseWithRetry } from '../src/parse.js';
 import { checkParsed } from '../src/guards.js';
 import { zonedToMs, localParts } from '../src/time.js';
 import { ensureStore } from '../src/store.js';
+import { readEnv } from './lib/env.mjs';
 
 const shouldAsk = (e) => e.data === null || (e.godzina === null && e.typ !== 'rachunek');
 
@@ -15,15 +16,6 @@ export function classify(expect, result) {
   const same = v.data === expect.data && v.godzina === expect.godzina && v.osoba === expect.osoba
     && (v.typ === 'rachunek') === (expect.typ === 'rachunek');
   return same && !shouldAsk(expect) ? 'correct' : 'wrong_saved';
-}
-
-function readEnv(path) {
-  const env = {};
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
-    const m = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
 }
 
 async function main() {
