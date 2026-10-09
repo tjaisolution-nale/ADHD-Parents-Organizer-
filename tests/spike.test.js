@@ -7,6 +7,9 @@ test('spike workflow checks every capability the bot needs', () => {
   const wf = JSON.parse(readFileSync('n8n/workflows/spike.json', 'utf8'));
   assert.deepEqual(wf.nodes.map(n => n.type).sort(), ['n8n-nodes-base.code', 'n8n-nodes-base.scheduleTrigger']);
   const code = wf.nodes.find(n => n.type === 'n8n-nodes-base.code').parameters.jsCode;
-  for (const s of ['this.helpers.httpRequest', '$env', '$getWorkflowStaticData', 'setTimeout', "encoding: 'arraybuffer'", 'returnFullResponse', 'ignoreHttpStatusErrors', 'URLSearchParams', 'count']) assert.ok(code.includes(s), s);
+  for (const s of ['this.helpers.httpRequest', '$env', '$getWorkflowStaticData', 'setTimeout', "encoding: 'arraybuffer'", 'returnFullResponse', 'ignoreHttpStatusErrors', "timeZone: 'Europe/London'", 'timeout:', 'count']) assert.ok(code.includes(s), s);
+  // n8n 2.x task runner has no URLSearchParams; the bot does not use it, so the spike must not fail on it.
+  assert.ok(!code.includes('URLSearchParams'));
+  assert.equal(wf.id, 'domSpike00000001');
   assert.deepEqual(findSecrets(JSON.stringify(wf)), []);
 });

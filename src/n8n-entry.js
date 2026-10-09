@@ -11,8 +11,12 @@ const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 const HOUR = 3600000;
+// Zawieszone żądanie (np. po uśpieniu Maca) nie może blokować przebiegu do limitu n8n (5 min).
+const HTTP_TIMEOUT_MS = 30000;
 const asJson = (body) => (typeof body === 'string' && body ? JSON.parse(body) : body);
 const fatalError = (message) => Object.assign(new Error(message), { fatal: true });
+// Węzeł Code w n8n 2.x nie ma URLSearchParams ani URL: kodowanie formularza ręcznie.
+const formEncode = (fields) => Object.entries(fields).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
 
 function toBase64(data) {
   const bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
@@ -23,17 +27,17 @@ function toBase64(data) {
 }
 
 export function makeIo(httpRequest, config, store) {
-  const request = (o) => httpRequest({ returnFullResponse: true, ignoreHttpStatusErrors: true, ...o });
+  const request = (o) => httpRequest({ returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: HTTP_TIMEOUT_MS, ...o });
 
   async function googleToken(force = false) {
     if (!force && store.gtoken && store.gtoken.exp - 60000 > Date.now()) return store.gtoken.value;
     const res = await request({
       method: 'POST', url: TOKEN_URL, json: false,
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
+      body: formEncode({
         client_id: config.google.clientId, client_secret: config.google.clientSecret,
         refresh_token: config.google.refreshToken, grant_type: 'refresh_token',
-      }).toString(),
+      }),
     });
     const body = asJson(res.body) || {};
     if (res.statusCode >= 400 || !body.access_token) {
@@ -90,7 +94,7 @@ async function notifyOwner(httpRequest, env, message) {
   if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_ID_NIEBIESKI) return;
   await httpRequest({
     method: 'POST', url: `${TELEGRAM}/bot${env.TELEGRAM_BOT_TOKEN}/sendMessage`, json: true,
-    returnFullResponse: true, ignoreHttpStatusErrors: true,
+    returnFullResponse: true, ignoreHttpStatusErrors: true, timeout: HTTP_TIMEOUT_MS,
     body: { chat_id: Number(env.TELEGRAM_ID_NIEBIESKI), text: `⚠️ Bot Dom: ${message}` },
   });
 }

@@ -10,7 +10,7 @@ const ERRORS_ID = 'domBledy00000001';
 
 async function bundle() {
   const result = await build({
-    entryPoints: ['src/n8n-entry.js'], bundle: true, write: false, format: 'iife', globalName: 'DomBot',
+    entryPoints: ['src/n8n-bundle.js'], bundle: true, write: false, format: 'iife',
     platform: 'neutral', target: 'es2020', loader: { '.md': 'text', '.json': 'json' }, charset: 'utf8', legalComments: 'none',
   });
   return result.outputFiles[0].text;
@@ -19,8 +19,9 @@ async function bundle() {
 const json = (wf) => `${JSON.stringify(wf, null, 2)}\n`;
 
 function botWorkflow(code) {
-  const jsCode = `${code}
-const r = await DomBot.main({ httpRequest: (o) => this.helpers.httpRequest(o), env: $env, staticData: $getWorkflowStaticData('global'), now: Date.now() });
+  const jsCode = `let DomBotMain;
+${code}
+const r = await DomBotMain({ httpRequest: (o) => this.helpers.httpRequest(o), env: $env, staticData: $getWorkflowStaticData('global'), now: Date.now() });
 return [{ json: r }];
 `;
   return {

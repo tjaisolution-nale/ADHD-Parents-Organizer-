@@ -43,7 +43,7 @@ fi
 cat <<'EOT'
 
 Gotowe. Dalej w n8n (http://localhost:5678):
-  1. Otwórz workflow „Dom – bot” → Settings → Error workflow: „Dom – błędy” → Save.
-  2. Włącz „Dom – bot” (przełącznik Active).
+  1. Otwórz workflow „Dom – bot” → Settings i sprawdź, że Error workflow to „Dom – błędy”.
+  2. Włącz „Dom – bot” (n8n 1.x: przełącznik Active; n8n 2.x: przycisk Publish).
   3. Napisz w grupie „Dom”: „jutro 18 test”. Bot powinien odpowiedzieć w kilka sekund.
 EOT
