@@ -1,0 +1,46 @@
+{
+  "name": "Dom – błędy",
+  "nodes": [
+    {
+      "id": "a7d3c1f0-0003-4b2e-8c11-000000000003",
+      "name": "Błąd bota",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "a7d3c1f0-0004-4b2e-8c11-000000000004",
+      "name": "Powiadom",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Powiadamia 🟦, gdy workflow „Dom – bot” zakończy się błędem.\nconst message = $json.execution?.error?.message || 'nieznany błąd';\nawait this.helpers.httpRequest({\n  method: 'POST',\n  url: `https://api.telegram.org/bot${$env.TELEGRAM_BOT_TOKEN}/sendMessage`,\n  body: { chat_id: Number($env.TELEGRAM_ID_NIEBIESKI), text: `⚠️ Bot Dom: ${message}` },\n  json: true,\n});\nreturn [{ json: { sent: true } }];\n"
+      }
+    }
+  ],
+  "connections": {
+    "Błąd bota": {
+      "main": [
+        [
+          {
+            "node": "Powiadom",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}
