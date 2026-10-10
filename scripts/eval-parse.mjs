@@ -33,7 +33,7 @@ export function classify(expect, result, sender = '🟦') {
 }
 
 // Jedno próbne wywołanie przed testem: zły klucz albo nazwa modelu dają od razu czytelny powód.
-async function preflight(env) {
+export async function preflight(env) {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
     method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
     body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] }),
