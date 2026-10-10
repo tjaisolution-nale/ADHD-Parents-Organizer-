@@ -48,10 +48,10 @@ Bot jest sprawdzony na n8n 2.42.6 (z task runnerami, domyślnymi w 2.x): ten sam
 
 ## Krok 4: Gemini
 
-1. W [Google AI Studio](https://aistudio.google.com) utwórz klucz API w projekcie z włączonymi płatnościami (płatny tier). W darmowym tierze treści mogą być używane do ulepszania usług Google.
-2. W Google Cloud ustaw alert budżetowy, np. 5 £ miesięcznie (Billing → Budgets & alerts).
+1. W [Google AI Studio](https://aistudio.google.com) zaimportuj projekt „Dom bot” (**Import projects**) i utwórz w nim klucz API (**Create API key**). Na start wystarczy darmowy plan (Free tier): w Wielkiej Brytanii, EOG i Szwajcarii Google stosuje do danych z darmowego planu te same zasady co w płatnym, czyli nie używa treści do ulepszania usług. Darmowy plan ma niższe limity (AI Studio → **Rate Limit**); po ich przekroczeniu wiadomość trafia do 📥 do posortowania, nic nie ginie. Gdy limity zaczną przeszkadzać, włącz płatny plan (**Set up billing**).
+2. Przy płatnym planie ustaw w Google Cloud alert budżetowy, np. 5 £ miesięcznie (Billing → Budgets & alerts).
 3. W `GEMINI_MODEL` wpisz aktualny model z rodziny Flash, który obsługuje audio i structured output (lista modeli w AI Studio).
-4. Opcjonalnie sprawdź rozumienie wiadomości: `npm run eval:parse` (około 30 wywołań, wynik co najmniej 90% i zero błędnie zapisanych dat).
+4. Opcjonalnie sprawdź rozumienie wiadomości: `npm run eval:parse` (około 30 wywołań, wynik co najmniej 90% i zero błędnie zapisanych dat). W darmowym planie potrwa kilka minut, bo skrypt czeka na limit zapytań na minutę.
 
 ## Krok 5: plik n8n/.env
 

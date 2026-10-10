@@ -7,6 +7,13 @@ import { zonedToMs, localParts } from '../src/time.js';
 import { ensureStore } from '../src/store.js';
 import { readEnv } from './lib/env.mjs';
 
+// Ile sekund czekać po 429 (darmowy plan ma limit zapytań na minutę): RetryInfo z odpowiedzi + 1 s zapasu.
+export function retryDelaySeconds(body) {
+  const info = body?.error?.details?.find((d) => String(d['@type']).endsWith('RetryInfo'));
+  const secs = parseFloat(info?.retryDelay);
+  return Number.isFinite(secs) ? Math.ceil(secs) + 1 : 20;
+}
+
 const shouldAsk = (e) => e.data === null || (e.godzina === null && e.typ !== 'rachunek');
 
 // result: { saved: false } albo { saved: true, value: Parsed }; osoba null oznacza osobę wysyłającą
@@ -40,11 +47,19 @@ async function main() {
   const tz = env.GENERIC_TIMEZONE || 'Europe/London';
   const io = {
     async gemini(body) {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
-        method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(`Gemini ${res.status}`);
-      return res.json();
+      for (let attempt = 0; ; attempt++) {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+          method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(body),
+        });
+        if (res.status === 429 && attempt < 4) {
+          const wait = retryDelaySeconds(await res.json().catch(() => ({})));
+          console.log(`  … limit zapytań na minutę (darmowy plan), czekam ${wait} s`);
+          await new Promise((resolve) => setTimeout(resolve, wait * 1000));
+          continue;
+        }
+        if (!res.ok) throw new Error(`Gemini ${res.status}`);
+        return res.json();
+      }
     },
   };
   const counts = { correct: 0, asked: 0, wrong_saved: 0 };
