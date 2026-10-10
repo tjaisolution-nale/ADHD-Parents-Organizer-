@@ -32,11 +32,11 @@ Bot jest sprawdzony na n8n 2.42.6 (z task runnerami, domyślnymi w 2.x): ten sam
 
 ## Krok 2: Telegram
 
-1. Napisz do [@BotFather](https://t.me/BotFather): `/newbot`, nazwa np. „Dom”, i zachowaj token.
-2. W BotFather: `/setprivacy` → wybierz bota → **Disable**. Bez tego bot nie widzi zwykłych wiadomości w grupie.
+1. Napisz do [@BotFather](https://t.me/BotFather): `/newbot`, nazwa np. „Dom”. Token wklej do `n8n/.env` jako `TELEGRAM_BOT_TOKEN` (nigdzie indziej).
+2. W BotFather: `/setprivacy` → wybierz bota → **Disable**. Bez tego bot nie widzi zwykłych wiadomości w grupie. Zrób to **przed** dodaniem bota do grupy (zmiana działa dopiero po ponownym dodaniu).
 3. Utwórz grupę „Dom” z 🟦, 🟩 i botem.
-4. Napisz coś w grupie, a potem otwórz w przeglądarce `https://api.telegram.org/bot<TOKEN>/getUpdates`. Odczytaj `chat.id` grupy (liczba ujemna) oraz `from.id` obu osób.
-5. 🟦 pisze prywatnie do bota `/start`. Bez tego bot nie może wysyłać prywatnych powiadomień o błędach.
+4. 🟦 pisze prywatnie do bota `/start`. Bez tego bot nie może wysyłać prywatnych powiadomień o błędach.
+5. Obie osoby piszą coś w grupie. Potem w terminalu, w katalogu repozytorium: `npm run telegram:ids`. Skrypt wypisze id grupy (liczba ujemna) i id obu osób; wpisz je do `n8n/.env` (`TELEGRAM_CHAT_ID`, `TELEGRAM_ID_NIEBIESKI`, `TELEGRAM_ID_ZIELONY`).
 
 ## Krok 3: Google Cloud (dostęp bota do kalendarza)
 
@@ -55,7 +55,7 @@ Bot jest sprawdzony na n8n 2.42.6 (z task runnerami, domyślnymi w 2.x): ten sam
 
 ## Krok 5: plik n8n/.env
 
-Skopiuj `n8n/.env.example` do `n8n/.env` i uzupełnij wszystkie pola. Na start zostaw `DOM_MODE=test`, czyli bot pisze do „Dom-TEST”.
+Skopiuj `n8n/.env.example` do `n8n/.env` i uzupełnij wszystkie pola. `npm run check:env` sprawdza format każdego pola (bez wypisywania wartości) i mówi, w którym kroku uzupełnić puste. Na start zostaw `DOM_MODE=test`, czyli bot pisze do „Dom-TEST”.
 
 ## Krok 6: instalacja
 

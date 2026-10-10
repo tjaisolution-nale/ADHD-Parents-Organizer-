@@ -11,7 +11,9 @@
     "test": "TZ=UTC node --test",
     "build:n8n": "node scripts/build-workflows.mjs",
     "check:n8n": "node scripts/build-workflows.mjs --check",
-    "eval:parse": "node scripts/eval-parse.mjs"
+    "eval:parse": "node scripts/eval-parse.mjs",
+    "check:env": "node scripts/check-env.mjs",
+    "telegram:ids": "node scripts/telegram-ids.mjs"
   },
   "devDependencies": {
     "ajv": "8.17.1",
