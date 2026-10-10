@@ -59,6 +59,8 @@ Skopiuj `n8n/.env.example` do `n8n/.env` i uzupełnij wszystkie pola. `npm run c
 
 ## Krok 6: instalacja
 
+Przed pierwszym startem wyczyść kolejkę starych wiadomości z Telegrama (np. „cześć” z kroku 2), żeby bot na nie nie odpowiadał: `npm run telegram:ids -- --clear`.
+
 - Z n8n bota z kroku 0 (zalecane): `scripts/setup.sh`. Skrypt odświeży kontener, by wczytał uzupełniony `n8n/.env`.
 - Z innym, istniejącym kontenerem n8n: upewnij się, że kontener dostaje zmienne z `n8n/.env` (np. `env_file`) i ma `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, potem `N8N_CONTAINER=<nazwa-kontenera> scripts/setup.sh`.
 

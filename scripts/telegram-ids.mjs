@@ -1,6 +1,7 @@
 // Odczytuje z Telegrama id grupy „Dom” i id osób, które do niej pisały. Token bierze z n8n/.env i go nie wypisuje.
 // Działa, dopóki bot w n8n jeszcze nie odbiera wiadomości (inaczej to on je zabiera).
 // Użycie: npm run telegram:ids
+// Przed pierwszym startem bota: npm run telegram:ids -- --clear (czyści kolejkę starych wiadomości, np. „cześć”).
 import { fileURLToPath } from 'node:url';
 import { readEnv } from './lib/env.mjs';
 
@@ -24,6 +25,11 @@ export function summarizeUpdates(updates) {
     people: [...people].map(([id, name]) => ({ id, name })),
     started: [...started],
   };
+}
+
+/** Offset, który potwierdza wszystkie pobrane wiadomości (Telegram usuwa je wtedy z kolejki). */
+export function nextOffset(updates) {
+  return updates.length ? Math.max(...updates.map((u) => u.update_id)) + 1 : null;
 }
 
 async function main() {
@@ -50,6 +56,11 @@ async function main() {
   console.log(started.length
     ? `\n/start do bota napisał(a): ${started.join(', ')} ✓`
     : '\nNikt jeszcze nie napisał /start do bota prywatnie. 🟦 musi to zrobić, by dostawać powiadomienia o błędach.');
+  if (process.argv.includes('--clear')) {
+    const offset = nextOffset(body.result);
+    if (offset) await fetch(`https://api.telegram.org/bot${token}/getUpdates?offset=${offset}&limit=1&timeout=0`);
+    console.log(`\n✓ Wyczyszczono kolejkę: ${body.result.length} starych wiadomości bot pominie przy pierwszym starcie.`);
+  }
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();

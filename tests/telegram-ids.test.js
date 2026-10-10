@@ -24,3 +24,9 @@ test('a group upgraded to a supergroup shows only its new id', () => {
   ]);
   assert.deepEqual(s.groups, [{ id: -1009, title: 'Dom' }]);
 });
+
+test('clearing the queue confirms everything up to the newest update', async () => {
+  const { nextOffset } = await import('../scripts/telegram-ids.mjs');
+  assert.equal(nextOffset([{ update_id: 5 }, { update_id: 9 }, { update_id: 7 }]), 10);
+  assert.equal(nextOffset([]), null);
+});
