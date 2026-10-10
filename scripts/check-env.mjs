@@ -25,7 +25,7 @@ const FIELDS = [
   ['GOOGLE_CLIENT_SECRET', 'krok 6', /^GOCSPX-[0-9A-Za-z_-]{20,}$/, 'sekret klienta zaczyna się od GOCSPX-'],
   ['GOOGLE_REFRESH_TOKEN', 'krok 6', /^1\/\/[0-9A-Za-z_-]{20,}$/, 'refresh token zaczyna się od 1//'],
   ['GEMINI_API_KEY', 'krok 7', /^[A-Za-z0-9._-]{30,}$/, 'pełny klucz z AI Studio (ikona kopiowania przy kluczu), nie skrócony podpis z listy'],
-  ['GEMINI_MODEL', 'krok 7', /^gemini-[a-z0-9.-]+$/, 'sama nazwa modelu, np. gemini-…-flash, bez przedrostka models/'],
+  ['GEMINI_MODEL', 'krok 7', /^gemini-[a-z0-9.-]+$/, 'sama nazwa modelu, np. gemini-flash-lite-latest, bez przedrostka models/'],
   ['GEMINI_DAILY_LIMIT', 'krok 7', /^[1-9]\d*$/, 'liczba wywołań dziennie, np. 200', true],
   ['DOM_MODE', 'krok 8', /^(test|prod)$/, 'test albo prod', true],
 ];

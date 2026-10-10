@@ -14,7 +14,7 @@ export function geminiHint(status, message) {
     return 'Limit darmowego planu jest wyczerpany. Dzienny odnawia się o północy czasu pacyficznego (około 8:00 w UK). '
       + 'Możesz też wpisać GEMINI_MODEL=gemini-flash-lite-latest (wyższe darmowe limity) albo włączyć płatny plan (Set up billing w AI Studio).';
   }
-  if (status === 404) return 'Nie ma takiego modelu. Sprawdź GEMINI_MODEL w n8n/.env, np. gemini-flash-latest.';
+  if (status === 404) return 'Nie ma takiego modelu. Sprawdź GEMINI_MODEL w n8n/.env, np. gemini-flash-lite-latest.';
   if (status === 400 || status === 401 || status === 403) return 'Klucz nie działa. Skopiuj GEMINI_API_KEY jeszcze raz z AI Studio (ikona kopiowania przy kluczu).';
   if (status >= 500) return 'Gemini jest chwilowo przeciążony po stronie Google. Spróbuj za kilka minut.';
   return `Nieoczekiwana odpowiedź: ${message}`;
