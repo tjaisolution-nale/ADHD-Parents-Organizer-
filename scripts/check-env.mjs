@@ -1,7 +1,8 @@
 // Sprawdza format pól w n8n/.env, krok po kroku z docs/setup.md. Nigdy nie wypisuje wartości.
 // Użycie: npm run check:env
 import { fileURLToPath } from 'node:url';
-import { readEnv } from './lib/env.mjs';
+import { readFileSync } from 'node:fs';
+import { readEnvText } from './lib/env.mjs';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GROUP_CAL = /^[^\s@]+@group\.calendar\.google\.com$/;
@@ -29,16 +30,31 @@ const FIELDS = [
   ['DOM_MODE', 'krok 8', /^(test|prod)$/, 'test albo prod', true],
 ];
 
-/** @returns {{ ok: boolean, rows: Array<{ name, step, status: 'ok'|'bad'|'empty'|'optional', hint? }> }} */
-export function checkEnv(env) {
+export function isValid(name, value) {
+  const field = FIELDS.find(([n]) => n === name);
+  return field ? field[2].test(value) : true;
+}
+
+const FIX = 'napraw automatycznie: npm run fix:env';
+
+/**
+ * @param env wartości z n8n/.env
+ * @param raw surowa treść pliku (do wykrycia powtórzonych pól)
+ * @returns {{ ok: boolean, rows: Array<{ name, step, status: 'ok'|'bad'|'empty'|'optional', hint? }> }}
+ */
+export function checkEnv(env, raw = '') {
   const prod = env.DOM_MODE === 'prod';
   const rows = FIELDS.map(([name, step, pattern, hint, optional]) => {
     const value = env[name] ?? '';
+    const copies = raw.split('\n').filter((l) => l.trim().startsWith(`${name}=`)).length;
+    if (copies > 1) return { name, step, status: 'bad', hint: `pole występuje w pliku ${copies} razy; ${FIX}` };
     if (!value) {
       const mayBeEmpty = optional || (name === 'DOM_CALENDAR_ID' && !prod);
       return { name, step, status: mayBeEmpty ? 'optional' : 'empty', hint };
     }
-    if (/\s/.test(value) || /^["']|["']$/.test(value)) return { name, step, status: 'bad', hint: 'usuń spacje i cudzysłowy wokół wartości' };
+    if (value.includes(`${name}=`)) return { name, step, status: 'bad', hint: `nazwa pola jest w linii dwa razy; ${FIX}` };
+    if (/\s/.test(value) || /^["']|["']$/.test(value)) return { name, step, status: 'bad', hint: `usuń spacje i cudzysłowy wokół wartości; ${FIX}` };
+    if (/[^\x21-\x7E]/.test(value)) return { name, step, status: 'bad', hint: 'zawiera nietypowe znaki (np. z autokorekty edytora); wklej wartość jeszcze raz' };
     return pattern.test(value) ? { name, step, status: 'ok' } : { name, step, status: 'bad', hint };
   });
   return { ok: rows.every((r) => r.status === 'ok' || r.status === 'optional'), rows };
@@ -48,12 +64,12 @@ const MARK = { ok: '✓', bad: '✗', empty: '·', optional: '○' };
 
 function main() {
   const path = process.argv[2] || 'n8n/.env';
-  let env;
-  try { env = readEnv(path); } catch {
+  let raw;
+  try { raw = readFileSync(path, 'utf8'); } catch {
     console.log(`Nie ma pliku ${path}. Utwórz go: cp -n n8n/.env.example n8n/.env`);
     process.exit(1);
   }
-  const { ok, rows } = checkEnv(env);
+  const { ok, rows } = checkEnv(readEnvText(raw), raw);
   let step = '';
   for (const r of rows) {
     if (r.step !== step) { step = r.step; console.log(`\n${step}`); }

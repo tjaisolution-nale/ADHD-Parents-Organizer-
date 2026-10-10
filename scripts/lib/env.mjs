@@ -2,8 +2,12 @@
 import { readFileSync } from 'node:fs';
 
 export function readEnv(path) {
+  return readEnvText(readFileSync(path, 'utf8'));
+}
+
+export function readEnvText(text) {
   const env = {};
-  for (const line of readFileSync(path, 'utf8').split('\n')) {
+  for (const line of text.split('\n')) {
     const m = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
     if (m) env[m[1]] = m[2];
   }
