@@ -1,12 +1,14 @@
 // Jednorazowe uzyskanie refresh tokenu Google dla bota: node scripts/google-auth.mjs
-// Czyta GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET z n8n/.env, nic nie zapisuje na dysku.
+// Czyta GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET z n8n/.env i sam zapisuje tam GOOGLE_REFRESH_TOKEN (bez wyświetlania).
 import http from 'node:http';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { readEnv } from './lib/env.mjs';
+import { readEnv, setEnvValue } from './lib/env.mjs';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar.readonly'];
 const PORT = 53682;
+const ENV_PATH = 'n8n/.env';
 const REDIRECT_URI = `http://127.0.0.1:${PORT}`;
 
 export function buildAuthUrl({ clientId, redirectUri, state }) {
@@ -33,7 +35,7 @@ async function exchange(code, env) {
 }
 
 function main() {
-  const env = readEnv('n8n/.env');
+  const env = readEnv(ENV_PATH);
   if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
     console.error('Uzupełnij GOOGLE_CLIENT_ID i GOOGLE_CLIENT_SECRET w n8n/.env (docs/setup.md, krok 3).');
     process.exit(1);
@@ -49,8 +51,9 @@ function main() {
     try {
       const token = await exchange(code, env);
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' }).end('Gotowe. Wróć do terminala.');
-      console.log('\nWklej tę linię do n8n/.env (zastąp pustą):\n');
-      console.log(`GOOGLE_REFRESH_TOKEN=${token}\n`);
+      writeFileSync(ENV_PATH, setEnvValue(readFileSync(ENV_PATH, 'utf8'), 'GOOGLE_REFRESH_TOKEN', token));
+      console.log(`\n✓ Zapisano GOOGLE_REFRESH_TOKEN w ${ENV_PATH} (wartości celowo nie wyświetlam).`);
+      console.log('Sprawdź: npm run check:env');
     } catch (err) {
       res.writeHead(500, { 'content-type': 'text/plain; charset=utf-8' }).end('Coś poszło nie tak. Szczegóły w terminalu.');
       console.error(err.message);

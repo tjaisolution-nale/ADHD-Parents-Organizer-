@@ -44,7 +44,7 @@ Bot jest sprawdzony na n8n 2.42.6 (z task runnerami, domyślnymi w 2.x): ten sam
 2. **APIs & Services → Library**: włącz **Google Calendar API**.
 3. **OAuth consent screen** (Google Auth Platform): typ **External**, wypełnij nazwę i e-mail, w **Data Access** dodaj zakresy `calendar.events` i `calendar.readonly`. W **Branding** uzupełnij **Application home page** (`https://github.com/tjaisolution-nale/ADHD-Parents-Organizer-`), **Application privacy policy link** (`https://github.com/tjaisolution-nale/ADHD-Parents-Organizer-/blob/HEAD/PRIVACY.md`), **Authorized domains** (`github.com`) i **Developer contact information**; bez nich przycisk **Publish app** jest wyszarzony. Potem w **Audience** kliknij **Publish app**, tak by stan był **In production** (komunikat o weryfikacji pomiń). W stanie „Testing” dostęp wygasa co 7 dni.
 4. **Credentials → Create credentials → OAuth client ID**, typ **Desktop app**. Wpisz ID klienta i sekret do `n8n/.env` (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`).
-5. W terminalu, w katalogu repozytorium: `node scripts/google-auth.mjs`. Otwórz wyświetlony adres, zaloguj się kontem 🟦 i zaakceptuj ostrzeżenie o niezweryfikowanej aplikacji (to Twoja własna aplikacja, ostrzeżenie pojawi się tylko raz). Skopiuj wypisaną linię `GOOGLE_REFRESH_TOKEN=...` do `n8n/.env`.
+5. W terminalu, w katalogu repozytorium: `node scripts/google-auth.mjs`. Otwórz wyświetlony adres, zaloguj się kontem 🟦 i zaakceptuj ostrzeżenie o niezweryfikowanej aplikacji (to Twoja własna aplikacja, ostrzeżenie pojawi się tylko raz). Skrypt sam zapisze `GOOGLE_REFRESH_TOKEN` w `n8n/.env` i nie wyświetli go na ekranie. Sprawdź wynik: `npm run check:env`.
 
 ## Krok 4: Gemini
 
