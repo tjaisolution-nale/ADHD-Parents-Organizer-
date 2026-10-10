@@ -2,19 +2,24 @@
 
 Ten przewodnik prowadzi przez konfigurację krok po kroku. Zajmuje około godziny. 🟦 to osoba, której konto Google obsługuje bota; 🟩 to druga osoba.
 
-## Krok 0: spike (10 minut)
+## Krok 0: własny n8n dla bota i spike (15 minut)
 
-Ten krok sprawdza, czy węzeł Code w Twoim n8n potrafi to, czego potrzebuje bot: wysyłać zapytania HTTP (także bez przerywania na błędach HTTP), czytać zmienne środowiska, pamiętać stan między uruchomieniami, czekać, pobierać pliki binarne i kodować je w base64.
+Bot działa we własnym n8n, osobno od innych instancji n8n na tym Macu: kontener `dom-n8n-1`, adres http://localhost:5680, własne dane. Dzięki temu bot nie widzi kluczy innych projektów, a one nie widzą tokenów bota.
 
-1. Sprawdź wersję n8n: `docker exec <nazwa-kontenera> n8n --version`.
-2. Jeśli w Twoim kontenerze nie ma jeszcze `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, dodaj tę zmienną i zrestartuj kontener (bez niej odczyt `$env` będzie zablokowany).
-3. W n8n: **Workflows → Import from File** i wybierz `n8n/workflows/spike.json`.
-4. Otwórz workflow „Dom – spike” i **włącz go**: w n8n 1.x przełącznik **Active**, w n8n 2.x przycisk **Publish**. Odczekaj około 40 sekund i **wyłącz** (Active off albo **Unpublish**).
-5. Otwórz **Executions** tego workflow: powinny być 3–4 uruchomienia. Wyślij Claude wynik węzła „Sprawdź możliwości” z ostatniego z nich.
+Spike sprawdza, czy węzeł Code potrafi to, czego potrzebuje bot: wysyłać zapytania HTTP (także bez przerywania na błędach HTTP), czytać zmienne środowiska, pamiętać stan między uruchomieniami, czekać, pobierać pliki binarne, liczyć czas w strefie Europe/London i kodować w base64.
+
+W terminalu, w katalogu repozytorium:
+
+1. `cp -n n8n/.env.example n8n/.env` (wersja n8n jest już wpisana; resztę uzupełnisz w kroku 5).
+2. `docker compose -f n8n/docker-compose.yml up -d`
+3. Otwórz http://localhost:5680 i załóż konto właściciela. Konto jest lokalne, tylko na tym Macu.
+4. `docker compose -f n8n/docker-compose.yml exec n8n n8n import:workflow --input=/workflows/spike.json`, potem odśwież stronę n8n.
+5. Otwórz workflow „Dom – spike” i kliknij **Publish** (w n8n 1.x: przełącznik **Active**). Odczekaj około 40 sekund i kliknij **Unpublish**.
+6. Otwórz **Executions** tego workflow: powinny być 3–4 uruchomienia. Wyślij Claude wynik węzła „Sprawdź możliwości” z ostatniego z nich.
 
 Oczekiwany wynik: `count` rośnie z uruchomienia na uruchomienie (1, 2, 3…), a `http`, `fullResponse`, `env`, `staticData`, `timer`, `binary`, `intl` i `base64` mają wartość `true`. Pole `runners` mówi, czy włączone są task runnery n8n. Pole `errors` mówi, co poszło nie tak. Po sprawdzeniu usuń workflow „Dom – spike”.
 
-Bot jest sprawdzony na n8n 2.42.6 (z task runnerami, domyślnymi w 2.x): ten sam pakiet przeszedł pełny przebieg Telegram → Gemini → Kalendarz na atrapach API, a stan przetrwał między uruchomieniami. Jeśli instalujesz n8n od zera i `docker.n8n.io` nie odpowiada, ten sam obraz jest w Docker Hub jako `n8nio/n8n`.
+Bot jest sprawdzony na n8n 2.42.6 (z task runnerami, domyślnymi w 2.x): ten sam pakiet przeszedł pełny przebieg Telegram → Gemini → Kalendarz na atrapach API, a stan przetrwał między uruchomieniami. Jeśli `docker.n8n.io` nie odpowiada, ten sam obraz jest w Docker Hub jako `n8nio/n8n`.
 
 ## Krok 1: kalendarze
 
@@ -54,10 +59,10 @@ Skopiuj `n8n/.env.example` do `n8n/.env` i uzupełnij wszystkie pola. Na start z
 
 ## Krok 6: instalacja
 
-- Z kontenerem z tego repozytorium: `scripts/setup.sh`.
-- Z Twoim istniejącym kontenerem n8n: upewnij się, że kontener dostaje zmienne z `n8n/.env` (np. `env_file`) i ma `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, potem `N8N_CONTAINER=<nazwa-kontenera> scripts/setup.sh`.
+- Z n8n bota z kroku 0 (zalecane): `scripts/setup.sh`. Skrypt odświeży kontener, by wczytał uzupełniony `n8n/.env`.
+- Z innym, istniejącym kontenerem n8n: upewnij się, że kontener dostaje zmienne z `n8n/.env` (np. `env_file`) i ma `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`, potem `N8N_CONTAINER=<nazwa-kontenera> scripts/setup.sh`.
 
-Następnie w n8n włącz workflow „Dom – bot” (n8n 1.x: przełącznik **Active**; n8n 2.x: przycisk **Publish**). Z terminala w n8n 2.x: `docker exec <nazwa-kontenera> n8n publish:workflow --id=domBot0000000001`, a potem restart kontenera. Workflow błędów „Dom – błędy” jest już przypięty w ustawieniach; sprawdź to w **Settings → Error workflow**.
+Następnie w n8n bota (http://localhost:5680) włącz workflow „Dom – bot” (n8n 2.x: przycisk **Publish**; n8n 1.x: przełącznik **Active**). Z terminala: `docker compose -f n8n/docker-compose.yml exec n8n n8n publish:workflow --id=domBot0000000001`, a potem `docker compose -f n8n/docker-compose.yml restart`. Workflow błędów „Dom – błędy” jest już przypięty w ustawieniach; sprawdź to w **Settings → Error workflow**.
 
 ## Aktualizacja bota
 
@@ -69,4 +74,4 @@ Na telefonie ustaw Wispr Flow jako klawiaturę do dyktowania i dyktuj prosto do 
 
 ## Krok 8: z testów na produkcję
 
-Po tygodniu testów (lista w `docs/testy-akceptacyjne.md`): w `n8n/.env` ustaw `DOM_MODE=prod` i upewnij się, że `DOM_CALENDAR_ID` jest wypełnione (bez niego bot nie wystartuje i raz na godzinę napisze o tym do 🟦), zrestartuj kontener n8n i poproś Claude o przełączenie Routines na kalendarz „Dom” i oba adresy e-mail.
+Po tygodniu testów (lista w `docs/testy-akceptacyjne.md`): w `n8n/.env` ustaw `DOM_MODE=prod` i upewnij się, że `DOM_CALENDAR_ID` jest wypełnione (bez niego bot nie wystartuje i raz na godzinę napisze o tym do 🟦), uruchom ponownie `docker compose -f n8n/docker-compose.yml up -d` (kontener wczyta nowy `.env`) i poproś Claude o przełączenie Routines na kalendarz „Dom” i oba adresy e-mail.

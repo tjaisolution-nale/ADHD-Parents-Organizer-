@@ -1,5 +1,8 @@
-# n8n dla bota „Dom”. Uruchamiane przez scripts/setup.sh.
-# Wersję obrazu ustawia N8N_VERSION w n8n/.env (ta sama, której już używasz).
+# Osobny n8n tylko dla bota „Dom”: własny kontener (dom-n8n-1), dane i port 5680,
+# niezależnie od innych instancji n8n na tym Macu. Uruchamiane przez scripts/setup.sh.
+# Wersję obrazu ustawia N8N_VERSION w n8n/.env.
+name: dom
+
 services:
   n8n:
     image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:?Ustaw N8N_VERSION w n8n/.env}
@@ -8,8 +11,10 @@ services:
     environment:
       # Węzeł Code bota czyta konfigurację z $env
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_DIAGNOSTICS_ENABLED=false
     ports:
-      - "127.0.0.1:5678:5678"
+      # Tylko ten Mac
+      - "127.0.0.1:5680:5678"
     volumes:
       - n8n_data:/home/node/.n8n
       - ./workflows:/workflows:ro

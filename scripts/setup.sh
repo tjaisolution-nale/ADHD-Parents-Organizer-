@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Instalacja bota „Dom” na Macu: zależności, workflow n8n i ich import do n8n w Dockerze.
+# Domyślnie stawia osobny n8n dla bota (n8n/docker-compose.yml, http://localhost:5680).
 # Własny, już działający kontener n8n: N8N_CONTAINER=<nazwa-kontenera> scripts/setup.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -32,7 +33,7 @@ else
   "${COMPOSE[@]}" up -d
   echo "Czekam, aż n8n wystartuje..."
   for _ in $(seq 1 30); do
-    if curl -fs http://127.0.0.1:5678/healthz >/dev/null; then break; fi
+    if curl -fs http://127.0.0.1:5680/healthz >/dev/null; then break; fi
     sleep 2
   done
   for wf in "${WORKFLOWS[@]}"; do
@@ -42,7 +43,7 @@ fi
 
 cat <<'EOT'
 
-Gotowe. Dalej w n8n (http://localhost:5678):
+Gotowe. Dalej w n8n bota (http://localhost:5680):
   1. Otwórz workflow „Dom – bot” → Settings i sprawdź, że Error workflow to „Dom – błędy”.
   2. Włącz „Dom – bot” (n8n 1.x: przełącznik Active; n8n 2.x: przycisk Publish).
   3. Napisz w grupie „Dom”: „jutro 18 test”. Bot powinien odpowiedzieć w kilka sekund.
