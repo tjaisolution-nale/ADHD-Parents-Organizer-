@@ -14,6 +14,13 @@ export function retryDelaySeconds(body) {
   return Number.isFinite(secs) ? Math.ceil(secs) + 1 : 20;
 }
 
+// Wynik bez wywołań, które padły po stronie Google (limit, przeciążenie): to nie są pomyłki w rozumieniu.
+export function scoreOf(counts, total) {
+  const judged = total - counts.api_error;
+  const score = judged ? counts.correct / judged : 0;
+  return { judged, score, pass: judged > 0 && score >= 0.9 && counts.wrong_saved === 0 };
+}
+
 const shouldAsk = (e) => e.data === null || (e.godzina === null && e.typ !== 'rachunek');
 
 // result: { saved: false } albo { saved: true, value: Parsed }; osoba null oznacza osobę wysyłającą
@@ -51,9 +58,9 @@ async function main() {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
           method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY }, body: JSON.stringify(body),
         });
-        if (res.status === 429 && attempt < 4) {
-          const wait = retryDelaySeconds(await res.json().catch(() => ({})));
-          console.log(`  … limit zapytań na minutę (darmowy plan), czekam ${wait} s`);
+        if ((res.status === 429 || res.status >= 500) && attempt < 4) {
+          const wait = res.status === 429 ? retryDelaySeconds(await res.json().catch(() => ({}))) : 10;
+          console.log(`  … Gemini ${res.status === 429 ? 'limit zapytań na minutę (darmowy plan)' : 'chwilowo przeciążony'}, czekam ${wait} s`);
           await new Promise((resolve) => setTimeout(resolve, wait * 1000));
           continue;
         }
@@ -62,12 +69,17 @@ async function main() {
       }
     },
   };
-  const counts = { correct: 0, asked: 0, wrong_saved: 0 };
+  const counts = { correct: 0, asked: 0, wrong_saved: 0, api_error: 0 };
   for (const g of golden) {
     const now = zonedToMs(g.today, '08:00', tz);
     const ctx = { io, store: ensureStore({}), config: { tz, geminiLimit: 1000, parsePrompt: readFileSync('prompts/gemini-parse.md', 'utf8') }, now };
     const meta = { today: g.today, weekday: localParts(now, tz).weekday, sender: g.sender, tz };
     const res = await parseWithRetry(ctx, { text: g.text }, meta);
+    if (!res.ok && res.reason === 'error') {
+      counts.api_error++;
+      console.log(`${'api_error'.padEnd(11)} | ${g.text.padEnd(48)} | błąd po stronie Gemini, pominięte w wyniku`);
+      continue;
+    }
     const leading = /^\s*(🟦|🟩|🟨)/u.exec(g.text);
     const value = res.ok && leading ? { ...res.value, osoba: leading[1] } : res.ok ? res.value : null;
     const saved = res.ok && checkParsed(value, { nowMs: now, tz, text: g.text }).ok;
@@ -76,9 +88,9 @@ async function main() {
     const got = res.ok ? `${value.data ?? '—'} ${value.godzina ?? '—'} ${value.osoba ?? '·'} ${value.typ}` : res.reason;
     console.log(`${outcome.padEnd(11)} | ${g.text.padEnd(48)} | ${got}`);
   }
-  const score = counts.correct / golden.length;
-  console.log(`\npoprawne: ${counts.correct}/${golden.length} (${Math.round(score * 100)}%), pytania zamiast zapisu: ${counts.asked}, błędnie zapisane: ${counts.wrong_saved}`);
-  process.exit(score < 0.9 || counts.wrong_saved > 0 ? 1 : 0);
+  const { judged, score, pass } = scoreOf(counts, golden.length);
+  console.log(`\npoprawne: ${counts.correct}/${judged} (${Math.round(score * 100)}%), pytania zamiast zapisu: ${counts.asked}, błędnie zapisane: ${counts.wrong_saved}, błędy Gemini (pominięte): ${counts.api_error}`);
+  process.exit(pass ? 0 : 1);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();
