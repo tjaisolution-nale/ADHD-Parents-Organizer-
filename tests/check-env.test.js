@@ -36,3 +36,10 @@ test('DOM_CALENDAR_ID may stay empty in test mode', () => {
   assert.equal(row(checkEnv({ ...GOOD, DOM_CALENDAR_ID: '' }).rows, 'DOM_CALENDAR_ID').status, 'optional');
   assert.equal(row(checkEnv({ ...GOOD, DOM_MODE: 'prod', DOM_CALENDAR_ID: '' }).rows, 'DOM_CALENDAR_ID').status, 'empty');
 });
+
+test('Gemini keys in newer formats pass; a copied short label does not', () => {
+  for (const key of ['AQ.' + 'Ab8RN6x'.repeat(8), 'AIza' + 'b'.repeat(35)]) {
+    assert.equal(row(checkEnv({ ...GOOD, GEMINI_API_KEY: key }).rows, 'GEMINI_API_KEY').status, 'ok', key.slice(0, 4));
+  }
+  assert.equal(row(checkEnv({ ...GOOD, GEMINI_API_KEY: '...3i8g' }).rows, 'GEMINI_API_KEY').status, 'bad');
+});
