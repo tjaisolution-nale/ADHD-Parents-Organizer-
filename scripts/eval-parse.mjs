@@ -18,8 +18,24 @@ export function classify(expect, result, sender = '🟦') {
   return same && !shouldAsk(expect) ? 'correct' : 'wrong_saved';
 }
 
+// Jedno próbne wywołanie przed testem: zły klucz albo nazwa modelu dają od razu czytelny powód.
+async function preflight(env) {
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+    method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+    body: JSON.stringify({ contents: [{ parts: [{ text: 'ping' }] }] }),
+  });
+  if (res.ok) return null;
+  const body = await res.json().catch(() => ({}));
+  return `Gemini ${res.status}: ${body.error?.message || res.statusText}`;
+}
+
 async function main() {
   const env = readEnv('n8n/.env');
+  const problem = await preflight(env);
+  if (problem) {
+    console.log(`✗ ${problem}\nSprawdź GEMINI_API_KEY i GEMINI_MODEL w n8n/.env (npm run check:env).`);
+    process.exit(1);
+  }
   const golden = JSON.parse(readFileSync('tests/parse-golden.json', 'utf8'));
   const tz = env.GENERIC_TIMEZONE || 'Europe/London';
   const io = {
