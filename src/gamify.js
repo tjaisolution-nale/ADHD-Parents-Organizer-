@@ -8,12 +8,13 @@ const DICE_PAUSE_MS = 2000;
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 const LOOKBACK_DAYS = 30; // ✅ zaległej sprawy liczy się w tygodniu kliknięcia, więc czytamy też starsze wydarzenia
+const LOOKAHEAD_DAYS = 60; // ✅ przed terminem też liczy się w tygodniu kliknięcia, więc czytamy też przyszłe wydarzenia
 
 // Wydarzenia, których punkty należą do tygodni od `firstWeek` do `lastWeek` włącznie, pogrupowane po tygodniu.
 async function eventsByWeek(ctx, firstWeek, lastWeek) {
   const { tz, domCal } = ctx.config;
   const from = zonedToMs(addDays(firstWeek, -LOOKBACK_DAYS), '00:00', tz);
-  const to = zonedToMs(addDays(lastWeek, 7), '00:00', tz);
+  const to = zonedToMs(addDays(lastWeek, 7 + LOOKAHEAD_DAYS), '00:00', tz);
   const byWeek = {};
   for (const ev of await listEvents(ctx, domCal, from, to)) {
     const week = weekStart(eventWeekDate(ev, tz));

@@ -125,3 +125,13 @@ test('review#7: two ✅ on the same task in overlapping runs count once (ETag cl
   assert.match(f.events[0].description, /pkt: 🟦1 🟩1/);
   assert.ok(f.calls.some(c => c.method === 'answerCallbackQuery' && c.params.text === 'Już zrobione ✅'));
 });
+
+test('test week: a task ticked ahead of its date still counts on the next ✅ that week', async () => {
+  const sat = zonedToMs('2026-10-10', '17:00', TZ);
+  const f = makeFakeIo({ events: [timed('🟦 Na poniedziałek', '2026-10-12', '18:00', 30), timed('🟦 Dziś', '2026-10-10', '19:00', 30)], diceValues: [37, 37] });
+  const ctx = ctxOf(f, sat);
+  await done(ctx, f.events[0], 'b');
+  await done({ ...ctx, now: sat + 30 * MIN }, f.events[1], 'b');
+  const results = texts(f).filter(t => t.startsWith('Zawsze coś wpada'));
+  assert.ok(results[1].includes('🟦 ▓▓░░░ 40%'), results[1]);
+});

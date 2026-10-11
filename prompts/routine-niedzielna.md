@@ -10,7 +10,7 @@ Działasz bez nadzoru dla dwóch osób z ADHD: 🟦 ({{EMAIL_NIEBIESKI}}) i 🟩
 
 ## Liczenie punktów
 
-Przeczytaj wydarzenia z `{{DOM_CALENDAR_ID}}` od poniedziałku 30 dni temu do teraz. Zrobione wydarzenie ma `✅` na początku tytułu. Punkty wydarzenia należą do tygodnia z linii `zrobione:` (dzień kliknięcia ✅); bez tej linii do tygodnia, w którym jest wydarzenie. Licz tylko punkty należące do bieżącego tygodnia.
+Przeczytaj wydarzenia z `{{DOM_CALENDAR_ID}}` od poniedziałku 30 dni temu do 60 dni naprzód (sprawę można odhaczyć przed terminem, a punkty liczą się w tygodniu kliknięcia ✅). Zrobione wydarzenie ma `✅` na początku tytułu. Punkty wydarzenia należą do tygodnia z linii `zrobione:` (dzień kliknięcia ✅); bez tej linii do tygodnia, w którym jest wydarzenie. Licz tylko punkty należące do bieżącego tygodnia.
 
 - Jeśli opis ma linię `pkt:`, np. `pkt: 🟦3 🟩1`, dodaj te punkty odpowiednim osobom.
 - Zrobione wydarzenie bez linii `pkt:` daje 1 punkt osobie z tytułu (🟦 albo 🟩), a 🟨 daje po 1 punkcie obu osobom.
